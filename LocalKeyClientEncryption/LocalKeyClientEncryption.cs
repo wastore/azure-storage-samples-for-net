@@ -45,7 +45,7 @@ namespace LocalKeyClientEncryption
         {
             if (algorithm == "ExampleAlgorithm")
             {
-                return ExampleKeyWrapAlgorithm(key, keyEncryptionKey);
+                return await ExampleKeyWrapAlgorithmAsync(key, keyEncryptionKey);
             }
             return key.ToArray();
         }
@@ -65,7 +65,7 @@ namespace LocalKeyClientEncryption
         {
             if (algorithm == "ExampleAlgorithm")
             {
-                return ExampleKeyWrapAlgorithm(key, keyEncryptionKey);
+                return await ExampleKeyWrapAlgorithmAsync(key, keyEncryptionKey);
             }
             return key.ToArray();
         }
@@ -75,6 +75,11 @@ namespace LocalKeyClientEncryption
         {
             byte[] result = CEK.ToArray();
             return result;
+        }
+
+        private static async Task<byte[]> ExampleKeyWrapAlgorithmAsync(ReadOnlyMemory<byte> CEK, byte[] KEK)
+        {
+            return await Task.FromResult(CEK.ToArray());
         }
     }
     class Program
