@@ -18,6 +18,7 @@ namespace LocalKeyClientEncryption
 {
     //Example implementation of IKeyEncryptionKey interface
     //Replace with customer's implementation used to encrypt data using Client Side Encryption
+    //MUST BE SAME IMPLEMENTATION USED WHEN FIRST ENCRYPTING DATA
     class SampleKeyEncryptionKey : IKeyEncryptionKey
     {
         string IKeyEncryptionKey.KeyId { get; }
@@ -34,7 +35,6 @@ namespace LocalKeyClientEncryption
         {
             if (algorithm == "ExampleAlgorithm")
             {
-                Console.WriteLine("test");
                 return ExampleKeyWrapAlgorithm(key, keyEncryptionKey);
             }
             return key.ToArray();
@@ -73,8 +73,7 @@ namespace LocalKeyClientEncryption
         //Sample KeyWrapAlgorithm, replace with customer's implementation
         private static byte[] ExampleKeyWrapAlgorithm(ReadOnlyMemory<byte> CEK, byte[] KEK)
         {
-            byte[] result = CEK.ToArray();
-            return result;
+            return CEK.ToArray();
         }
 
         private static async Task<byte[]> ExampleKeyWrapAlgorithmAsync(ReadOnlyMemory<byte> CEK, byte[] KEK)
@@ -84,90 +83,6 @@ namespace LocalKeyClientEncryption
     }
     class Program
     {
-
-        static void Main()
-        {
-            var config = ConfigurationManager.AppSettings;
-            //Credentials of Service Principal
-            TokenCredential credential =
-                new ClientSecretCredential(
-                    config["tenantId"],
-                    config["clientId"],
-                    config["clientSecret"]
-                    );
-            //Used to create encryption scopes for Server Side Encryption
-            string subscriptionId = config["subscriptionId"];
-            string resourceGroup = config["resourceGroup"];
-            string storageAccount = config["storageAccount"];
-
-            //Connection String of Storage Account
-            string connectionString = config["azureConnectionString"];
-
-            //Name of Container to be created in setup or container of blob to be converted to Server Side Encryption
-            string containerName = "example" + Guid.NewGuid().ToString();
-
-            //Name of File to be created in setup or name of blob to be converted to Server Side Encryption
-            string fileName = "example.txt";
-
-            //Name of KeyVault and Key used for Client Side Encryption and to be used for Customer Managed Key Server Side Encryption
-            string keyVaultName = config["keyVaultName"];
-            string keyVaultKeyName = config["keyVaultKeyName"];
-
-            //KeyWrap Algorithm used to wrap Content Encryption Key in Client Side Encryption
-            string KeyWrapAlgorithm = config["keyWrapAlgorithm"];
-
-            //Name of Encryption Scope to be created for Server Side Encryption
-            string encryptionScopeName = config["encryptionScopeName"];
-
-
-            //Key Encryption Key used in Client Side Encryption using local keys
-            string clientSideCustomerProvidedKey = config["clientSideCustomerProvidedKey"];
-
-            //Key used for Customer Provided Key Server Side Encryption
-            string serverSideCustomerProvidedKey = config["serverSideCustomerProvidedKey"];
-            byte[] localKeyBytes = ASCIIEncoding.UTF8.GetBytes(serverSideCustomerProvidedKey);
-
-            //File Path for local file used to upload and reupload
-            string localPath = "./data/";
-            Directory.CreateDirectory(localPath);
-            string localFilePath = Path.Combine(localPath, fileName);
-
-            //Creating Key Encryption Key object for Client Side Encryption
-            SampleKeyEncryptionKey keyEncryption = new SampleKeyEncryptionKey(clientSideCustomerProvidedKey);
-
-            //Set up Client Side Encryption Options used for Client Side Encryption
-            ClientSideEncryptionOptions clientSideOptions = new ClientSideEncryptionOptions(ClientSideEncryptionVersion.V1_0)
-            {
-                KeyEncryptionKey = keyEncryption,
-                //KeyResolver = keyResolve,
-                KeyWrapAlgorithm = KeyWrapAlgorithm
-            };
-
-            //Create Blob Service Client
-            BlobServiceClient blobServiceClient = new BlobServiceClient(connectionString);
-
-            //Run Setup Function that creates and example container and blob
-            SetupForExample(blobServiceClient, containerName, fileName, localFilePath, clientSideOptions);
-
-            Console.Write("Press Enter to change to SSE");
-            Console.ReadLine();
-
-            //Convert Client Side Encryption Blob to Server Side Encrytion with Microsoft Managed Keys, Customer Managed Keys, and Customer Provided Keys
-            CSEtoSSE(subscriptionId, resourceGroup, storageAccount, connectionString, containerName, fileName, localFilePath, clientSideOptions, encryptionScopeName, keyVaultName, keyVaultKeyName, credential, localKeyBytes);
-
-            //CLEAN UP EXAMPLE CONTAINER AND FILES
-            Console.Write("Press Enter to begin clean up");
-            Console.ReadLine();
-
-            //Delete downloaded files
-            CleanUp();
-
-            Console.WriteLine("Complete");
-
-        }
-
-
-
 
         private static void SetupForExample(BlobServiceClient blobService, string containerNameString, string fileNameString, string filePathString, ClientSideEncryptionOptions clientSideOption)
         {
@@ -184,7 +99,32 @@ namespace LocalKeyClientEncryption
             Console.WriteLine("Uploaded to Blob storage as blob: \n\t {0}\n", blobClient.Uri);
         }
 
-        private static void CSEtoSSE(string subscriptionId, string resourceGroup, string storageAccount, string connectionString, string containerNameString, string fileNameString, string filePathString, ClientSideEncryptionOptions clientSideOption, string encryptionScopeNameString, string keyVaultName, string keyVaultKeyName, TokenCredential credential, byte[] keyBytes)
+        private static void CreateEncryptionScopeMMK(string encryptionScopeName)
+        {
+            var config = ConfigurationManager.AppSettings;
+            string strCmdText;
+            strCmdText = "/C az storage account encryption-scope create --name " + encryptionScopeName + "MMK -s Microsoft.Storage --account-name " + config["storageAccount"] + " -g " + config["resourceGroup"] + " --subscription " + config["subscriptionId"];
+            Process process = System.Diagnostics.Process.Start("CMD.exe", strCmdText);
+            process.WaitForExit();
+
+        }
+        private static void CreateEncryptionScopeCMK(string encryptionScopeName, KeyVaultKey keyVaultKey)
+        {
+            var config = ConfigurationManager.AppSettings;
+            string strCmdText = "/C az storage account encryption-scope create --name " + encryptionScopeName + "CMK -s Microsoft.KeyVault -u " + keyVaultKey.Id.ToString() + " --account-name " + config["storageAccount"] + " -g " + config["resourceGroup"] + " --subscription " + config["subscriptionId"];
+            Process process = System.Diagnostics.Process.Start("CMD.exe", strCmdText);
+            process.WaitForExit();
+        }
+
+        private static KeyVaultKey CreateKeyVaultKey(string keyVaultName, string keyVaultKeyName, TokenCredential credential)
+        {
+            Uri keyVaultUri = new Uri("https://" + keyVaultName + ".vault.azure.net");
+            KeyClient keyClient = new KeyClient(keyVaultUri, credential);
+            KeyType keyType = new KeyType("RSA");
+            keyClient.CreateKey(keyVaultKeyName, keyType);
+            return keyClient.GetKey(keyVaultKeyName);
+        }
+        private static void CSEtoSSE(string connectionString, string containerNameString, string fileNameString, string filePathString, ClientSideEncryptionOptions clientSideOption, string encryptionScopeNameString, string keyVaultName, string keyVaultKeyName, TokenCredential credential, byte[] keyBytes)
         {
             //Download and decrypt Client Side Encrypted blob
             string downloadFilePath = filePathString.Replace(".txt", "Download.txt");
@@ -201,10 +141,7 @@ namespace LocalKeyClientEncryption
 
             //MICROSOFT MANAGED KEY SERVER SIDE ENCRYPTION
             //Create Encryption Scope for Microsoft Managed Key Server Side Encryption
-            string strCmdText;
-            strCmdText = "/C az storage account encryption-scope create --name " + encryptionScopeNameString + "MMK -s Microsoft.Storage --account-name " + storageAccount + " -g " + resourceGroup + " --subscription " + subscriptionId;
-            Process process = System.Diagnostics.Process.Start("CMD.exe", strCmdText);
-            process.WaitForExit();
+            CreateEncryptionScopeMMK(encryptionScopeNameString);
 
             //Set Blob Client Options with the created Encryption Scope
             BlobClientOptions blobClientOptions = new BlobClientOptions()
@@ -213,23 +150,17 @@ namespace LocalKeyClientEncryption
             };
 
             //Reupload Blob with Server Side Encryption
-            blobClient = new BlobClient(connectionString, containerNameString, "exampleMMK.txt", blobClientOptions);
+            blobClient = new BlobClient(connectionString, containerNameString, fileNameString.Replace(".txt", "MMK.txt"), blobClientOptions);
             using FileStream uploadFileStream = File.OpenRead("./data/exampleDownload.txt");
             blobClient.Upload(uploadFileStream, true);
             uploadFileStream.Close();
 
             //CUSTOMER MANAGED KEY SERVER SIDE ENCRYPTION
             //Create Key in Azure Key Vault for Customer Managed Key Server Side Encryption             
-            Uri keyVaultUri = new Uri("https://" + keyVaultName + ".vault.azure.net");
-            KeyClient keyClient = new KeyClient(keyVaultUri, credential);
-            KeyType keyType = new KeyType("RSA");
-            keyClient.CreateKey(keyVaultKeyName, keyType);
-            KeyVaultKey keyVaultKey = keyClient.GetKey(keyVaultKeyName);
+            KeyVaultKey keyVaultKey = CreateKeyVaultKey(keyVaultName, keyVaultKeyName, credential);
 
             //Create Encryption Scope for Customer Managed Key Server Side Encryption
-            strCmdText = "/C az storage account encryption-scope create --name " + encryptionScopeNameString + "CMK -s Microsoft.KeyVault -u " + keyVaultKey.Id.ToString() + " --account-name " + storageAccount + " -g " + resourceGroup + " --subscription " + subscriptionId;
-            process = System.Diagnostics.Process.Start("CMD.exe", strCmdText);
-            process.WaitForExit();
+            CreateEncryptionScopeCMK(encryptionScopeNameString, keyVaultKey);
 
             //Set Blob Client Options with the created Encryption Scope
             blobClientOptions = new BlobClientOptions()
@@ -238,7 +169,7 @@ namespace LocalKeyClientEncryption
             };
 
             //Reupload Blob with Server Side Encryption
-            blobClient = new BlobClient(connectionString, containerNameString, "exampleCMK.txt", blobClientOptions);
+            blobClient = new BlobClient(connectionString, containerNameString, fileNameString.Replace(".txt", "CMK.txt"), blobClientOptions);
             using FileStream uploadFileStream2 = File.OpenRead("./data/exampleDownload.txt");
             blobClient.Upload(uploadFileStream2, true);
             uploadFileStream2.Close();
@@ -253,15 +184,10 @@ namespace LocalKeyClientEncryption
             };
 
             //Reupload Blob with Server Side Encryption
-            blobClient = new BlobClient(connectionString, containerNameString, "exampleCPK.txt", blobClientOptions);
+            blobClient = new BlobClient(connectionString, containerNameString, fileNameString.Replace(".txt", "CPK.txt"), blobClientOptions);
             using FileStream uploadFileStream3 = File.OpenRead("./data/exampleDownload.txt");
             blobClient.Upload(uploadFileStream3, true);
             uploadFileStream3.Close();
-
-
-
-
-
 
 
         }
@@ -286,6 +212,91 @@ namespace LocalKeyClientEncryption
 
         }
 
+        /*
+        * Program uploads an example client side encrypted blob, and migrates it to server side encryption using
+        * Microsoft Managed Keys, Customer Managed Keys, and Customer Provided Keys
+        *
+        *
+        * NOTE: This program requires the following to be stored in the App.Config file:
+        * TENANT_ID
+        * CLIENT_ID
+        * CLIENTSECRET
+        * Azure Subscription ID
+        * Resource Group Name
+        * Storage Account Name
+        * Storage Account Connection String
+        * Key Vault Name
+        * Customer Provided Key Used for Client Side Encryption 
+        * Key Wrap Algorithm Used for Client Side Encryption ("ExampleAlgorithm" in SampleKeyEncryptionKey)
+        *  
+        * MUST MATCH PARAMETERS USED TO ENCRYPT CLIENT SIDE ENCRYPTED DATA
+        */
+        static void Main()
+        {
+            var config = ConfigurationManager.AppSettings;
+
+            //Credentials of Service Principal
+            TokenCredential credential =
+                new ClientSecretCredential(
+                    config["tenantId"],
+                    config["clientId"],
+                    config["clientSecret"]
+                    );
+
+            string keyVaultName = config["keyVaultName"];
+            string connectionString = config["connectionString"];
+
+
+            //Edit the Following as Needed
+            //Program Creates the Following using the Provided Names
+            string containerName = "example" + Guid.NewGuid().ToString();
+            string fileName = "example.txt";
+            string keyVaultKeyName = "testKey";
+            string encryptionScopeName = "myencryption";
+            string customerProvidedKey = "dfD3Jb#6htqfpoj@gGpomDAv21035%21";     //Key used for Customer Provided Key Server Side Encryption
+
+            byte[] localKeyBytes = ASCIIEncoding.UTF8.GetBytes(customerProvidedKey);
+
+
+
+
+            //File Path for local file used to upload and reupload
+            string localPath = "./data/";
+            Directory.CreateDirectory(localPath);
+            string localFilePath = Path.Combine(localPath, fileName);
+
+            //Creating Key Encryption Key object for Client Side Encryption
+            SampleKeyEncryptionKey keyEncryption = new SampleKeyEncryptionKey(config["clientSideCustomerProvidedKey"]);
+
+            //Set up Client Side Encryption Options used for Client Side Encryption
+            ClientSideEncryptionOptions clientSideOptions = new ClientSideEncryptionOptions(ClientSideEncryptionVersion.V1_0)
+            {
+                KeyEncryptionKey = keyEncryption,
+                KeyWrapAlgorithm = config["keyWrapAlgorithm"]
+            };
+
+            //Create Blob Service Client
+            BlobServiceClient blobServiceClient = new BlobServiceClient(connectionString);
+
+            //Run Setup Function that creates and example container and blob
+            SetupForExample(blobServiceClient, containerName, fileName, localFilePath, clientSideOptions);
+
+            Console.Write("Press Enter to change to SSE");
+            Console.ReadLine();
+
+            //Convert Client Side Encryption Blob to Server Side Encrytion with Microsoft Managed Keys, Customer Managed Keys, and Customer Provided Keys
+            CSEtoSSE(connectionString, containerName, fileName, localFilePath, clientSideOptions, encryptionScopeName, keyVaultName, keyVaultKeyName, credential, localKeyBytes);
+
+            //CLEAN UP EXAMPLE CONTAINER AND FILES
+            Console.Write("Press Enter to begin clean up");
+            Console.ReadLine();
+
+            //Delete downloaded files
+            CleanUp();
+
+            Console.WriteLine("Complete");
+
+        }
 
 
     }
