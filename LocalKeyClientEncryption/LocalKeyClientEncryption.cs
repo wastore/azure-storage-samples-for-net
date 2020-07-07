@@ -16,6 +16,11 @@ using System.Diagnostics;
 
 namespace LocalKeyClientEncryption
 {
+
+    /*
+     * SAMPLE PROGRAM THAT MIGRATES CLIENT SIDE ENCRYPTED DATA TO THREE TYPES OF SERVER SIDE ENCRYPTED DATA
+     */
+
     //Example implementation of IKeyEncryptionKey interface
     //Replace with customer's implementation used to encrypt data using Client Side Encryption
     //MUST BE SAME IMPLEMENTATION USED WHEN FIRST ENCRYPTING DATA
