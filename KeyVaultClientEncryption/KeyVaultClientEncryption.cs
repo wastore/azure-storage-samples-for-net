@@ -66,7 +66,10 @@ namespace KeyVaultClientEncryption
         {
             //Download and decrypt Client Side Encrypted blob using BlobClient with Client Side Encryption Options
             string downloadFilePath = filePathString.Replace(".txt", "Download.txt");
-            BlobClient blobClient = new BlobClient(connectionString, containerNameString, fileNameString).WithClientSideEncryptionOptions(clientSideOption);
+            BlobClient blobClient = new BlobClient(
+                connectionString, 
+                containerNameString, 
+                fileNameString).WithClientSideEncryptionOptions(clientSideOption);
             BlobDownloadInfo download = blobClient.Download();
 
             Console.WriteLine("\nDownloading blob to \n\t{0}\n", downloadFilePath);

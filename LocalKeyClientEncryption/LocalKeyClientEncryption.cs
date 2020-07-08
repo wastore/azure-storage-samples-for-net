@@ -76,7 +76,10 @@ namespace LocalKeyClientEncryption
         {
             //Download and decrypt Client Side Encrypted blob using BlobClient with Client Side Encryption Options
             string downloadFilePath = filePathString.Replace(".txt", "Download.txt");
-            BlobClient blobClient = new BlobClient(connectionString, containerNameString, fileNameString).WithClientSideEncryptionOptions(clientSideOption);
+            BlobClient blobClient = new BlobClient(
+                connectionString, 
+                containerNameString, 
+                fileNameString).WithClientSideEncryptionOptions(clientSideOption);
             BlobDownloadInfo download = blobClient.Download();
 
             Console.WriteLine("\nDownloading blob to \n\t{0}\n", downloadFilePath);
@@ -171,7 +174,7 @@ namespace LocalKeyClientEncryption
         * Key Wrap Algorithm for Client Side Encryption - keyWrapAlgorithm
         * Customer Provided Key for Client Side Encryption - clientSideCustomerProvidedKey        
         *  
-        * MUST MATCH PARAMETERS USED TO ENCRYPT CLIENT SIDE ENCRYPTED DATA
+        *  NOTE: This program uses names from Constants.cs, which should be edited as needed
         */
         static void Main()
         {
@@ -183,11 +186,7 @@ namespace LocalKeyClientEncryption
                     config["tenantId"],
                     config["clientId"],
                     config["clientSecret"]
-                    );
-
-            string keyVaultName = config["keyVaultName"];
-            string connectionString = config["connectionString"];
-            
+                    );                       
             //Get bytes for customer provided key
             byte[] localKeyBytes = ASCIIEncoding.UTF8.GetBytes(Constants.customerProvidedKey);
 
@@ -207,7 +206,7 @@ namespace LocalKeyClientEncryption
             };
 
             //Create Blob Service Client
-            BlobServiceClient blobServiceClient = new BlobServiceClient(connectionString);
+            BlobServiceClient blobServiceClient = new BlobServiceClient(config["connectionString"]);
 
             //Run Setup Function that creates and example container and blob
             SetupForExample(
@@ -219,13 +218,13 @@ namespace LocalKeyClientEncryption
 
             //Convert Client Side Encryption Blob to Server Side Encrytion with Microsoft Managed Keys, Customer Managed Keys, and Customer Provided Keys
             CSEtoSSE(
-                connectionString,
+                config["connectionString"],
                 Constants.containerName,
                 Constants.fileName, 
                 localFilePath, 
                 clientSideOptions,
                 Constants.encryptionScopeName, 
-                keyVaultName,
+                config["keyVaultName"],
                 Constants.keyVaultKeyName, 
                 credential, 
                 localKeyBytes);
