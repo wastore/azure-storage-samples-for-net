@@ -3,14 +3,15 @@ using Azure.Storage.Blobs.Models;
 using Azure.Storage.Blobs.Specialized;
 using Azure.Storage;
 using Azure.Core;
+using Azure.Security.KeyVault.Keys.Cryptography;
 using Azure.Identity;
 using System;
 using System.IO;
 using System.Configuration;
 
-namespace localKeyClientSideToCustomerManagedServerSide
+namespace keyVaultClientSideToCustomerManagedServerSide
 {
-    class Program
+    class Migration
     {        
         private static void CSEtoSSE(
             string connectionString,
@@ -35,14 +36,14 @@ namespace localKeyClientSideToCustomerManagedServerSide
                 download.Content.CopyTo(downloadFileStream);
                 downloadFileStream.Close();
             }
-            
+
             //Set Blob Client Options with the created Encryption Scope
             BlobClientOptions blobClientOptions = new BlobClientOptions()
             {
                 EncryptionScope = encryptionScopeNameString
             };
 
-            //Reupload Blob with Server Side Encryption
+            //Reupload Blob with Server Side Encryption using blob with Blob Client Options
             blobClient = new BlobClient(
                 connectionString,
                 containerNameString,
@@ -54,22 +55,22 @@ namespace localKeyClientSideToCustomerManagedServerSide
         }
 
         /*
-        * Program uploads an example client side encrypted blob, and migrates it to server side encryption using Customer Managed Keys
-        *
-        * NOTE: This program requires the following to be stored in the App.Config file:
-        * Azure Active Directory Tenant ID - tenantId
-        * Service Principal Application ID - clientId
-        * Service Principal Password - clientSecret
-        * Azure Subscription ID - subscriptionId
-        * Resource Group Name - resourceGroup
-        * Storage Account Name - storageAccount
-        * Storage Account Connection String- connectionString
-        * Key Vault Name - keyVaultName
-        * Key Wrap Algorithm for Client Side Encryption - keyWrapAlgorithm
-        * Customer Provided Key for Client Side Encryption - clientSideCustomerProvidedKey        
-        *  
-        *  NOTE: This program uses names from Constants.cs, which should be edited as needed
-        */
+         * Program uploads an example client side encrypted blob, and migrates it to server side encryption using Customer Managed Keys    
+         * 
+         * NOTE: This program requires the following to be stored in the App.Config file:
+         * Azure Active Directory Tenant ID - tenantId
+         * Service Principal Application ID - clientId
+         * Service Principal Password - clientSecret
+         * Azure Subscription ID - subscriptionId
+         * Resource Group Name - resourceGroup
+         * Storage Account Name - storageAccount
+         * Storage Account Connection String- connectionString
+         * Key Vault Key Uri - keyVaultKeyUri
+         * Key Wrap Algorithm - keyWrapAlgorithm
+         * 
+         * NOTE: This program uses names from Constants.cs, which should be edited as needed
+         * 
+         */
         static void Main()
         {
             var config = ConfigurationManager.AppSettings;
@@ -81,19 +82,20 @@ namespace localKeyClientSideToCustomerManagedServerSide
                     config["clientId"],
                     config["clientSecret"]
                     );
-
+            
             //File Path for local file used to upload and reupload
             string localPath = "./data" + Guid.NewGuid().ToString() + "/";
             Directory.CreateDirectory(localPath);
             string localFilePath = Path.Combine(localPath, Constants.fileName);
 
-            //Creating Key Encryption Key object for Client Side Encryption
-            SampleKeyEncryptionKey keyEncryption = new SampleKeyEncryptionKey(config["clientSideCustomerProvidedKey"]);
-
+            //Get Uri for Key Vault key
+            Uri keyVaultKeyUri = new Uri(config["keyVaultKeyUri"]);
+            //Create CryptographyClient using Key Vault Key
+            CryptographyClient cryptographyClient = new CryptographyClient(keyVaultKeyUri, credential);
             //Set up Client Side Encryption Options used for Client Side Encryption
             ClientSideEncryptionOptions clientSideOptions = new ClientSideEncryptionOptions(ClientSideEncryptionVersion.V1_0)
             {
-                KeyEncryptionKey = keyEncryption,
+                KeyEncryptionKey = cryptographyClient,
                 KeyWrapAlgorithm = config["keyWrapAlgorithm"]
             };
 
@@ -104,13 +106,11 @@ namespace localKeyClientSideToCustomerManagedServerSide
             Setup.SetupForExample(
                 blobServiceClient,
                 Constants.containerName,
-                Constants.fileName,
+                Constants.fileName,               
                 localFilePath,
                 Constants.encryptionScopeName,
                 clientSideOptions,
-                config["keyVaultName"],
-                Constants.keyVaultKeyName,
-                credential);
+                keyVaultKeyUri);
 
             //Convert Client Side Encryption Blob to Server Side Encrytion with Customer Managed Keys
             CSEtoSSE(
@@ -123,8 +123,7 @@ namespace localKeyClientSideToCustomerManagedServerSide
 
             //Delete downloaded files
             Setup.CleanUp(localPath);
-
-            Console.WriteLine("Completed migration to Customer Managed Server Side Encryption");
+            Console.WriteLine("Completed migration to Customer Managed Key Server Side Encryption");
         }
     }
 }

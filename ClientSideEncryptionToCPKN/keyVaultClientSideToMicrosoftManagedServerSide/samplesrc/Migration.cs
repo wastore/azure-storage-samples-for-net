@@ -11,7 +11,7 @@ using System.Configuration;
 
 namespace keyVaultClientSideToMicrosoftManagedServerSide
 {
-    class Program
+    class Migration
     {
         private static void CSEtoSSE(
             string connectionString,

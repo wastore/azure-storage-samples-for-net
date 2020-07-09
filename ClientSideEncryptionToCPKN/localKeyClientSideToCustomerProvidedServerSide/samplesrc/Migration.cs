@@ -3,12 +3,13 @@ using Azure.Storage.Blobs.Models;
 using Azure.Storage.Blobs.Specialized;
 using Azure.Storage;
 using System;
+using System.Text;
 using System.IO;
 using System.Configuration;
 
-namespace localKeyClientSideToMicrosoftManagedServerSide
+namespace localKeyClientSideToCustomerProvidedServerSide
 {
-    class Program
+    class Migration
     {
         private static void CSEtoSSE(
             string connectionString,
@@ -16,7 +17,7 @@ namespace localKeyClientSideToMicrosoftManagedServerSide
             string fileNameString,
             string filePathString,
             ClientSideEncryptionOptions clientSideOption,
-            string encryptionScopeNameString)
+            byte[] keyBytes)
         {
             //Download and decrypt Client Side Encrypted blob using BlobClient with Client Side Encryption Options
             string downloadFilePath = filePathString.Replace(".txt", "Download.txt");
@@ -34,25 +35,26 @@ namespace localKeyClientSideToMicrosoftManagedServerSide
                 downloadFileStream.Close();
             }
 
-            //Set Blob Client Options with the created Encryption Scope
+            //Set Blob Client Options with the given Customer Provided Key
+            CustomerProvidedKey customerProvidedKey = new CustomerProvidedKey(keyBytes);
             BlobClientOptions blobClientOptions = new BlobClientOptions()
             {
-                EncryptionScope = encryptionScopeNameString
+                CustomerProvidedKey = customerProvidedKey,
             };
 
             //Reupload Blob with Server Side Encryption
             blobClient = new BlobClient(
                 connectionString,
                 containerNameString,
-                fileNameString.Replace(".txt", "MMK.txt"),
+                fileNameString.Replace(".txt", "CPK.txt"),
                 blobClientOptions);
-            using FileStream uploadFileStream = File.OpenRead(downloadFilePath);
-            blobClient.Upload(uploadFileStream, true);
-            uploadFileStream.Close();
+            using FileStream uploadFileStream3 = File.OpenRead(downloadFilePath);
+            blobClient.Upload(uploadFileStream3, true);
+            uploadFileStream3.Close();
         }
 
         /*
-        * Program uploads an example client side encrypted blob, and migrates it to server side encryption using Microsoft Managed Keys
+        * Program uploads an example client side encrypted blob, and migrates it to server side encryption using Customer Provided Keys
         *
         * NOTE: This program requires the following to be stored in the App.Config file:
         * Azure Active Directory Tenant ID - tenantId
@@ -71,6 +73,9 @@ namespace localKeyClientSideToMicrosoftManagedServerSide
         static void Main()
         {
             var config = ConfigurationManager.AppSettings;
+
+            //Get bytes for customer provided key
+            byte[] localKeyBytes = ASCIIEncoding.UTF8.GetBytes(Constants.customerProvidedKey);
 
             //File Path for local file used to upload and reupload
             string localPath = "./data" + Guid.NewGuid().ToString() + "/";
@@ -96,22 +101,21 @@ namespace localKeyClientSideToMicrosoftManagedServerSide
                 Constants.containerName,
                 Constants.fileName,
                 localFilePath,
-                Constants.encryptionScopeName,
                 clientSideOptions);
 
-            //Convert Client Side Encryption Blob to Server Side Encrytion with Microsoft Managed Keys
+            //Convert Client Side Encryption Blob to Server Side Encrytion with Customer Provided Keys
             CSEtoSSE(
                 config["connectionString"],
                 Constants.containerName,
                 Constants.fileName,
                 localFilePath,
                 clientSideOptions,
-                Constants.encryptionScopeName);
+                localKeyBytes);
 
             //Delete downloaded files
             Setup.CleanUp(localPath);
 
-            Console.WriteLine("Completed migration to Microsoft Managed Server Side Encryption");
+            Console.WriteLine("Completed Migration to Customer Provided Key Server Side Encryption");
         }
     }
 }

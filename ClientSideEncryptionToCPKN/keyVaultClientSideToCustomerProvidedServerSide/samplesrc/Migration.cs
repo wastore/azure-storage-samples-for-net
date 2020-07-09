@@ -2,15 +2,18 @@
 using Azure.Storage.Blobs.Models;
 using Azure.Storage.Blobs.Specialized;
 using Azure.Storage;
+using Azure.Core;
+using Azure.Security.KeyVault.Keys.Cryptography;
+using Azure.Identity;
 using System;
 using System.Text;
 using System.IO;
 using System.Configuration;
 
-namespace localKeyClientSideToCustomerProvidedServerSide
+namespace keyVaultClientSideToCustomerProvidedServerSide
 {
-    class Program
-    {
+    class Migration
+    {       
         private static void CSEtoSSE(
             string connectionString,
             string containerNameString,
@@ -33,8 +36,8 @@ namespace localKeyClientSideToCustomerProvidedServerSide
             {
                 download.Content.CopyTo(downloadFileStream);
                 downloadFileStream.Close();
-            }
-
+            }                       
+            
             //Set Blob Client Options with the given Customer Provided Key
             CustomerProvidedKey customerProvidedKey = new CustomerProvidedKey(keyBytes);
             BlobClientOptions blobClientOptions = new BlobClientOptions()
@@ -42,37 +45,45 @@ namespace localKeyClientSideToCustomerProvidedServerSide
                 CustomerProvidedKey = customerProvidedKey,
             };
 
-            //Reupload Blob with Server Side Encryption
+            //Reupload Blob with Server Side Encryption using blob with Blob Client Options
             blobClient = new BlobClient(
                 connectionString,
                 containerNameString,
                 fileNameString.Replace(".txt", "CPK.txt"),
                 blobClientOptions);
-            using FileStream uploadFileStream3 = File.OpenRead(downloadFilePath);
-            blobClient.Upload(uploadFileStream3, true);
-            uploadFileStream3.Close();
+            using FileStream uploadFileStream = File.OpenRead(downloadFilePath);
+            blobClient.Upload(uploadFileStream, true);
+            uploadFileStream.Close();
         }
 
         /*
-        * Program uploads an example client side encrypted blob, and migrates it to server side encryption using Customer Provided Keys
-        *
-        * NOTE: This program requires the following to be stored in the App.Config file:
-        * Azure Active Directory Tenant ID - tenantId
-        * Service Principal Application ID - clientId
-        * Service Principal Password - clientSecret
-        * Azure Subscription ID - subscriptionId
-        * Resource Group Name - resourceGroup
-        * Storage Account Name - storageAccount
-        * Storage Account Connection String- connectionString
-        * Key Vault Name - keyVaultName
-        * Key Wrap Algorithm for Client Side Encryption - keyWrapAlgorithm
-        * Customer Provided Key for Client Side Encryption - clientSideCustomerProvidedKey        
-        *  
-        *  NOTE: This program uses names from Constants.cs, which should be edited as needed
-        */
+         * Program uploads an example client side encrypted blob, and migrates it to server side encryption using Customer Provided Keys         
+         *
+         * NOTE: This program requires the following to be stored in the App.Config file:
+         * Azure Active Directory Tenant ID - tenantId
+         * Service Principal Application ID - clientId
+         * Service Principal Password - clientSecret
+         * Azure Subscription ID - subscriptionId
+         * Resource Group Name - resourceGroup
+         * Storage Account Name - storageAccount
+         * Storage Account Connection String- connectionString
+         * Key Vault Key Uri - keyVaultKeyUri
+         * Key Wrap Algorithm - keyWrapAlgorithm
+         * 
+         * NOTE: This program uses names from Constants.cs, which should be edited as needed
+         * 
+         */
         static void Main()
         {
             var config = ConfigurationManager.AppSettings;
+
+            //Credentials of Service Principal
+            TokenCredential credential =
+                new ClientSecretCredential(
+                    config["tenantId"],
+                    config["clientId"],
+                    config["clientSecret"]
+                    );
 
             //Get bytes for customer provided key
             byte[] localKeyBytes = ASCIIEncoding.UTF8.GetBytes(Constants.customerProvidedKey);
@@ -82,13 +93,14 @@ namespace localKeyClientSideToCustomerProvidedServerSide
             Directory.CreateDirectory(localPath);
             string localFilePath = Path.Combine(localPath, Constants.fileName);
 
-            //Creating Key Encryption Key object for Client Side Encryption
-            SampleKeyEncryptionKey keyEncryption = new SampleKeyEncryptionKey(config["clientSideCustomerProvidedKey"]);
-
+            //Get Uri for Key Vault key
+            Uri keyVaultKeyUri = new Uri(config["keyVaultKeyUri"]);
+            //Create CryptographyClient using Key Vault Key
+            CryptographyClient cryptographyClient = new CryptographyClient(keyVaultKeyUri, credential);
             //Set up Client Side Encryption Options used for Client Side Encryption
             ClientSideEncryptionOptions clientSideOptions = new ClientSideEncryptionOptions(ClientSideEncryptionVersion.V1_0)
             {
-                KeyEncryptionKey = keyEncryption,
+                KeyEncryptionKey = cryptographyClient,
                 KeyWrapAlgorithm = config["keyWrapAlgorithm"]
             };
 
@@ -114,8 +126,7 @@ namespace localKeyClientSideToCustomerProvidedServerSide
 
             //Delete downloaded files
             Setup.CleanUp(localPath);
-
-            Console.WriteLine("Completed Migration to Customer Provided Key Server Side Encryption");
+            Console.WriteLine("Completed migration to Customer Provided Key Server Side Encryption");
         }
     }
 }
