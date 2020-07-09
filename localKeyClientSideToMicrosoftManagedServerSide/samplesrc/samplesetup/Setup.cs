@@ -1,13 +1,10 @@
 ﻿using Azure.Storage.Blobs;
 using Azure.Storage.Blobs.Specialized;
 using Azure.Storage;
-using Azure.Core;
-using Azure.Security.KeyVault.Keys;
 using System;
 using System.IO;
 using System.Configuration;
 using System.Diagnostics;
-
 
 namespace localKeyClientSideToMicrosoftManagedServerSide
 {
@@ -34,7 +31,7 @@ namespace localKeyClientSideToMicrosoftManagedServerSide
             blobClient.Upload(uploadFileStream, true);
             uploadFileStream.Close();
             Console.WriteLine("Uploaded to Blob storage as blob: \n\t {0}\n", blobClient.Uri);
-
+            
             Setup.CreateEncryptionScopeMMK(encryptionScopeName);
         }
 

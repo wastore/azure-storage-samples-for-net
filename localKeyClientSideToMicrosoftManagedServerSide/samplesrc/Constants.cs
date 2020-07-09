@@ -1,4 +1,5 @@
-﻿namespace localKeyClientSideToMicrosoftManagedServerSide
+﻿namespace localKeyClientSideToMicrosoftManagedServerSide 
+{ 
     class Constants
     {
         //Edit the Following as Needed

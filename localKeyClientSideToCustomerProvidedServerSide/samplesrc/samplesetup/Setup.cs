@@ -4,7 +4,6 @@ using Azure.Storage;
 using System;
 using System.IO;
 
-
 namespace localKeyClientSideToCustomerProvidedServerSide
 {
     class Setup

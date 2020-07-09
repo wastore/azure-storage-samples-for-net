@@ -8,7 +8,6 @@ using System.IO;
 using System.Configuration;
 using System.Diagnostics;
 
-
 namespace localKeyClientSideToCustomerManagedServerSide
 {
     class Setup
@@ -38,8 +37,8 @@ namespace localKeyClientSideToCustomerManagedServerSide
             uploadFileStream.Close();
             Console.WriteLine("Uploaded to Blob storage as blob: \n\t {0}\n", blobClient.Uri);
 
+            //Create key and use created key to create encryption scope
             KeyVaultKey keyVaultKey = Setup.CreateKeyVaultKey(keyVaultName, keyVaultKeyName, credential);
-
             Setup.CreateEncryptionScopeCMK(encryptionScopeName, keyVaultKey.Id);
         }
 
