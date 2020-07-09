@@ -1,8 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-
-namespace KeyVaultClientEncryption
+﻿namespace keyVaultClientSideToMicrosoftManagedServerSide
 {
     public class Constants
     {
@@ -11,6 +7,5 @@ namespace KeyVaultClientEncryption
         public const string containerName = "example";
         public const string fileName = "example.txt";
         public const string encryptionScopeName = "myencryption";
-        public const string customerProvidedKey = "dfD3Jb#6htqfpoj@gGpomDAv21035%21";     //Key used for Customer Provided Key Server Side Encryption
     }
 }

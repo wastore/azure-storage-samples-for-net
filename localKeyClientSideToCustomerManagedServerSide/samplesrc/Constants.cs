@@ -1,8 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-
-namespace LocalKeyClientEncryption
+﻿namespace localKeyClientSideToCustomerManagedServerSide
 {
     class Constants
     {
@@ -12,6 +8,5 @@ namespace LocalKeyClientEncryption
         public const string fileName = "example.txt";
         public const string keyVaultKeyName = "testKey";
         public const string encryptionScopeName = "myencryption";
-        public const string customerProvidedKey = "dfD3Jb#6htqfpoj@gGpomDAv21035%21";   //Key used for Customer Provided Key Server Side Encryption
     }
 }

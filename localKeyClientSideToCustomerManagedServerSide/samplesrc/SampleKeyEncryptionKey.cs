@@ -4,7 +4,7 @@ using Azure.Core.Cryptography;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace LocalKeyClientEncryption
+namespace localKeyClientSideToCustomerManagedServerSide
 {
     //Sample implementation of IKeyEncryptionKey interface
     //Replace with customer's implementation used to encrypt data using Client Side Encryption
