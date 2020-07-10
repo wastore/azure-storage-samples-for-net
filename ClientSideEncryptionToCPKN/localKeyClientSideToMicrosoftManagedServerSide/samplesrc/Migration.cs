@@ -4,26 +4,26 @@ using Azure.Storage.Blobs.Specialized;
 using Azure.Storage;
 using System;
 using System.IO;
-using System.Configuration;
 
 namespace localKeyClientSideToMicrosoftManagedServerSide
 {
     class Migration
-    {
-        private static void CSEtoSSE(
+    { 
+        //Downloads and decrypts client side encrypted blob, then reuploads blob with server side encryption using an encryption scope with a Microsoft managed key
+        private static void EncryptWithMicrosoftManagedKey(
             string connectionString,
-            string containerNameString,
-            string fileNameString,
-            string filePathString,
+            string containerName,
+            string fileName,
+            string filePath,
             ClientSideEncryptionOptions clientSideOption,
-            string encryptionScopeNameString)
+            string encryptionScopeName)
         {
             //Download and decrypt Client Side Encrypted blob using BlobClient with Client Side Encryption Options
-            string downloadFilePath = filePathString.Replace(".txt", "Download.txt");
+            string downloadFilePath = filePath.Replace(".txt", "Download.txt");
             BlobClient blobClient = new BlobClient(
                 connectionString,
-                containerNameString,
-                fileNameString).WithClientSideEncryptionOptions(clientSideOption);
+                containerName,
+                fileName).WithClientSideEncryptionOptions(clientSideOption);
             BlobDownloadInfo download = blobClient.Download();
 
             Console.WriteLine("\nDownloading blob to \n\t{0}\n", downloadFilePath);
@@ -34,17 +34,20 @@ namespace localKeyClientSideToMicrosoftManagedServerSide
                 downloadFileStream.Close();
             }
 
+            //Optional for encryption, change fileName to differentiate from original blob
+            fileName = fileName.Replace(".txt", "MMK.txt");
+
             //Set Blob Client Options with the created Encryption Scope
             BlobClientOptions blobClientOptions = new BlobClientOptions()
             {
-                EncryptionScope = encryptionScopeNameString
+                EncryptionScope = encryptionScopeName
             };
 
             //Reupload Blob with Server Side Encryption
             blobClient = new BlobClient(
                 connectionString,
-                containerNameString,
-                fileNameString.Replace(".txt", "MMK.txt"),
+                containerName,
+                fileName,
                 blobClientOptions);
             using FileStream uploadFileStream = File.OpenRead(downloadFilePath);
             blobClient.Upload(uploadFileStream, true);
@@ -70,25 +73,23 @@ namespace localKeyClientSideToMicrosoftManagedServerSide
         */
         static void Main()
         {
-            var config = ConfigurationManager.AppSettings;
-
             //File Path for local file used to upload and reupload
             string localPath = "./data" + Guid.NewGuid().ToString() + "/";
             Directory.CreateDirectory(localPath);
             string localFilePath = Path.Combine(localPath, Constants.fileName);
 
             //Creating Key Encryption Key object for Client Side Encryption
-            SampleKeyEncryptionKey keyEncryption = new SampleKeyEncryptionKey(config["clientSideCustomerProvidedKey"]);
+            SampleKeyEncryptionKey keyEncryption = new SampleKeyEncryptionKey(Constants.clientSideCustomerProvidedKey);
 
             //Set up Client Side Encryption Options used for Client Side Encryption
             ClientSideEncryptionOptions clientSideOptions = new ClientSideEncryptionOptions(ClientSideEncryptionVersion.V1_0)
             {
                 KeyEncryptionKey = keyEncryption,
-                KeyWrapAlgorithm = config["keyWrapAlgorithm"]
+                KeyWrapAlgorithm = Constants.keyWrapAlgorithm
             };
 
             //Create Blob Service Client
-            BlobServiceClient blobServiceClient = new BlobServiceClient(config["connectionString"]);
+            BlobServiceClient blobServiceClient = new BlobServiceClient(Constants.connectionString);
 
             //Run Setup Function that creates and example container and blob
             Setup.SetupForExample(
@@ -100,8 +101,8 @@ namespace localKeyClientSideToMicrosoftManagedServerSide
                 clientSideOptions);
 
             //Convert Client Side Encryption Blob to Server Side Encrytion with Microsoft Managed Keys
-            CSEtoSSE(
-                config["connectionString"],
+            EncryptWithMicrosoftManagedKey(
+                Constants.connectionString,
                 Constants.containerName,
                 Constants.fileName,
                 localFilePath,

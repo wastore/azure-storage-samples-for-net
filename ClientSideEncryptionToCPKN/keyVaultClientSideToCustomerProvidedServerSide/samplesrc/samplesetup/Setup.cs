@@ -8,30 +8,31 @@ namespace keyVaultClientSideToCustomerProvidedServerSide
 {
     class Setup
     {
+        //Creates example container and client side encrypted blob for sampple
         public static void SetupForExample(
             BlobServiceClient blobService,
-            string containerNameString,
-            string fileNameString,
-            string filePathString,
+            string containerName,
+            string fileName,
+            string filePath,
             ClientSideEncryptionOptions clientSideOption)
         {
-            //Create example Container and Blob, upload blob as a txt file containing "Hello World!"
-            BlobContainerClient containerClient = blobService.CreateBlobContainer(containerNameString);
+            //Create example Container and .txt file, upload .txt file as client side encrypted blob
+            BlobContainerClient containerClient = blobService.CreateBlobContainer(containerName);
             //Create BlobClient with Client Side Encryption Options to upload client side encrypted data
-            BlobClient blobClient = containerClient.GetBlobClient(fileNameString).WithClientSideEncryptionOptions(clientSideOption);
+            BlobClient blobClient = containerClient.GetBlobClient(fileName).WithClientSideEncryptionOptions(clientSideOption);
 
             //Create text file in Data folder to upload
-            File.WriteAllText(filePathString, "Hello World!");
+            File.WriteAllText(filePath, Constants.sampleFileContent);
 
-            using FileStream uploadFileStream = File.OpenRead(filePathString);
+            using FileStream uploadFileStream = File.OpenRead(filePath);
             blobClient.Upload(uploadFileStream, true);
             uploadFileStream.Close();
             Console.WriteLine("Uploaded to Blob storage as blob: \n\t {0}\n", blobClient.Uri);
         }
-            
+
+        //Delete files in the Data folder      
         public static void CleanUp(string path)
-        {
-            //Delete files in the Data folder            
+        {                  
             Directory.Delete(path, true);
         }        
     }

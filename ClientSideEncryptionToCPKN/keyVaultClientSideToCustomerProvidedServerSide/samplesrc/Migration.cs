@@ -8,26 +8,26 @@ using Azure.Identity;
 using System;
 using System.Text;
 using System.IO;
-using System.Configuration;
 
 namespace keyVaultClientSideToCustomerProvidedServerSide
 {
     class Migration
-    {       
-        private static void CSEtoSSE(
+    {
+        //Downloads and decrypts client side encrypted blob, then reuploads blob with server side encryption using a customer provided key
+        private static void EncryptWithCustomerProvidedKey(
             string connectionString,
-            string containerNameString,
-            string fileNameString,
-            string filePathString,
+            string containerName,
+            string fileName,
+            string filePath,
             ClientSideEncryptionOptions clientSideOption,
             byte[] keyBytes)
         {
             //Download and decrypt Client Side Encrypted blob using BlobClient with Client Side Encryption Options
-            string downloadFilePath = filePathString.Replace(".txt", "Download.txt");
+            string downloadFilePath = filePath.Replace(".txt", "Download.txt");
             BlobClient blobClient = new BlobClient(
                 connectionString,
-                containerNameString,
-                fileNameString).WithClientSideEncryptionOptions(clientSideOption);
+                containerName,
+                fileName).WithClientSideEncryptionOptions(clientSideOption);
             BlobDownloadInfo download = blobClient.Download();
 
             Console.WriteLine("\nDownloading blob to \n\t{0}\n", downloadFilePath);
@@ -36,8 +36,11 @@ namespace keyVaultClientSideToCustomerProvidedServerSide
             {
                 download.Content.CopyTo(downloadFileStream);
                 downloadFileStream.Close();
-            }                       
-            
+            }
+
+            //Optional for encryption, change fileName to differentiate from original blob
+            fileName = fileName.Replace(".txt", "CPK.txt");
+
             //Set Blob Client Options with the given Customer Provided Key
             CustomerProvidedKey customerProvidedKey = new CustomerProvidedKey(keyBytes);
             BlobClientOptions blobClientOptions = new BlobClientOptions()
@@ -48,8 +51,8 @@ namespace keyVaultClientSideToCustomerProvidedServerSide
             //Reupload Blob with Server Side Encryption using blob with Blob Client Options
             blobClient = new BlobClient(
                 connectionString,
-                containerNameString,
-                fileNameString.Replace(".txt", "CPK.txt"),
+                containerName,
+                fileName,
                 blobClientOptions);
             using FileStream uploadFileStream = File.OpenRead(downloadFilePath);
             blobClient.Upload(uploadFileStream, true);
@@ -75,14 +78,12 @@ namespace keyVaultClientSideToCustomerProvidedServerSide
          */
         static void Main()
         {
-            var config = ConfigurationManager.AppSettings;
-
             //Credentials of Service Principal
             TokenCredential credential =
                 new ClientSecretCredential(
-                    config["tenantId"],
-                    config["clientId"],
-                    config["clientSecret"]
+                    Constants.tenantId,
+                    Constants.clientId,
+                    Constants.clientSecret
                     );
 
             //Get bytes for customer provided key
@@ -94,18 +95,18 @@ namespace keyVaultClientSideToCustomerProvidedServerSide
             string localFilePath = Path.Combine(localPath, Constants.fileName);
 
             //Get Uri for Key Vault key
-            Uri keyVaultKeyUri = new Uri(config["keyVaultKeyUri"]);
+            Uri keyVaultKeyUri = new Uri(Constants.keyVaultKeyUri);
             //Create CryptographyClient using Key Vault Key
             CryptographyClient cryptographyClient = new CryptographyClient(keyVaultKeyUri, credential);
             //Set up Client Side Encryption Options used for Client Side Encryption
             ClientSideEncryptionOptions clientSideOptions = new ClientSideEncryptionOptions(ClientSideEncryptionVersion.V1_0)
             {
                 KeyEncryptionKey = cryptographyClient,
-                KeyWrapAlgorithm = config["keyWrapAlgorithm"]
+                KeyWrapAlgorithm = Constants.keyWrapAlgorithm
             };
 
             //Create Blob Service Client
-            BlobServiceClient blobServiceClient = new BlobServiceClient(config["connectionString"]);
+            BlobServiceClient blobServiceClient = new BlobServiceClient(Constants.connectionString);
 
             //Run Setup Function that creates and example container and blob
             Setup.SetupForExample(
@@ -116,8 +117,8 @@ namespace keyVaultClientSideToCustomerProvidedServerSide
                 clientSideOptions);
 
             //Convert Client Side Encryption Blob to Server Side Encrytion with Customer Provided Keys
-            CSEtoSSE(
-                config["connectionString"],
+            EncryptWithCustomerProvidedKey(
+                Constants.connectionString,
                 Constants.containerName,
                 Constants.fileName,
                 localFilePath,
