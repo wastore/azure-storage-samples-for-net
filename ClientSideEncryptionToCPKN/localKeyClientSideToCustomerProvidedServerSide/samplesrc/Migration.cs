@@ -78,7 +78,7 @@ namespace localKeyClientSideToCustomerProvidedServerSide
             //Get bytes for customer provided key
             byte[] localKeyBytes = ASCIIEncoding.UTF8.GetBytes(Constants.customerProvidedKey);
 
-            //File Path for local file used to upload and reupload
+            //File Path for local file used to download and reupload
             string localPath = "./data" + Guid.NewGuid().ToString() + "/";
             Directory.CreateDirectory(localPath);
             string localFilePath = Path.Combine(localPath, Constants.fileName);
@@ -101,7 +101,6 @@ namespace localKeyClientSideToCustomerProvidedServerSide
                 blobServiceClient,
                 Constants.containerName,
                 Constants.fileName,
-                localFilePath,
                 clientSideOptions);
 
             //Convert Client Side Encryption Blob to Server Side Encrytion with Customer Provided Keys

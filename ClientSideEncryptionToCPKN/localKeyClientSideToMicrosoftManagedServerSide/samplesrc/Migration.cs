@@ -73,7 +73,7 @@ namespace localKeyClientSideToMicrosoftManagedServerSide
         */
         static void Main()
         {
-            //File Path for local file used to upload and reupload
+            //File Path for local file used to download and reupload
             string localPath = "./data" + Guid.NewGuid().ToString() + "/";
             Directory.CreateDirectory(localPath);
             string localFilePath = Path.Combine(localPath, Constants.fileName);
@@ -96,7 +96,6 @@ namespace localKeyClientSideToMicrosoftManagedServerSide
                 blobServiceClient,
                 Constants.containerName,
                 Constants.fileName,
-                localFilePath,
                 Constants.encryptionScopeName,
                 clientSideOptions);
 

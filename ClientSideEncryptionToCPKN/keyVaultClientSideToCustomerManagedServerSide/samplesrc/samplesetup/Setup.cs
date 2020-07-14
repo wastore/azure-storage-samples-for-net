@@ -14,7 +14,6 @@ namespace keyVaultClientSideToCustomerManagedServerSide
             BlobServiceClient blobService,
             string containerName,
             string fileName,
-            string filePath,
             string encryptionScopeName,
             ClientSideEncryptionOptions clientSideOption,
             Uri keyVaultKeyUri)
@@ -24,10 +23,8 @@ namespace keyVaultClientSideToCustomerManagedServerSide
             //Create BlobClient with Client Side Encryption Options to upload client side encrypted data
             BlobClient blobClient = containerClient.GetBlobClient(fileName).WithClientSideEncryptionOptions(clientSideOption);
 
-            //Create text file in Data folder to upload
-            File.WriteAllText(filePath, Constants.sampleFileContent);
-
-            using FileStream uploadFileStream = File.OpenRead(filePath);
+            //Upload blob with client side encryption
+            using FileStream uploadFileStream = File.OpenRead(Path.Combine(Constants.samplePath, Constants.fileName));
             blobClient.Upload(uploadFileStream, true);
             uploadFileStream.Close();
             Console.WriteLine("Uploaded to Blob storage as blob: \n\t {0}\n", blobClient.Uri);
