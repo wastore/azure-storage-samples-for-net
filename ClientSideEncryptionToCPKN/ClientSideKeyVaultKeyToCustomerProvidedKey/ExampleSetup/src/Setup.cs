@@ -11,7 +11,18 @@ namespace ExampleSetup
 {
     class Setup
     {
-        //Creates example container and client side encrypted blob for sampple
+        /*Creates example container and client side encrypted blob for sample
+         * 
+         * NOTE: This program requires the following to be stored in the App.Config file:
+         * Azure Active Directory Tenant ID - tenantId
+         * Service Principal Application ID - clientId
+         * Service Principal Password - clientSecret
+         * Storage Account Connection String- connectionString
+         * Key Vault Key Uri - keyVaultKeyUri
+         * Key Wrap Algorithm - keyWrapAlgorithm
+         * 
+         * Creates example objects using names from Constants.cs, which may be edited as needed
+         */
         public static void SetupForExample(
             BlobServiceClient blobService,
             string containerName,

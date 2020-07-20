@@ -8,7 +8,13 @@ namespace ExampleSetup
 {
     class Setup
     {
-        //Creates example container and client side encrypted blob for sample
+        /*Creates example container and client side encrypted blob for sample
+         * 
+         * NOTE: This program requires the following to be stored in the App.Config file: 
+         * Storage Account Connection String- connectionString
+         * 
+         * Creates example objects using names from Constants.cs, which may be edited as needed
+         */
         public static void SetupForExample(
             BlobServiceClient blobService,
             string containerName,
