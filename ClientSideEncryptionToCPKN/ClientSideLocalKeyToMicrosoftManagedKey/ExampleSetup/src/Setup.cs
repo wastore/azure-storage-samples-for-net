@@ -12,9 +12,6 @@ namespace ExampleSetup
         /*Creates example container, client side encrypted blob, Key Vault key, and encryption scope for sample
          * 
          * NOTE: This program requires the following to be stored in the App.Config file:
-         * Azure Active Directory Tenant ID - tenantId
-         * Service Principal Application ID - clientId
-         * Service Principal Password - clientSecret
          * Subscription ID - subscriptionId
          * Resource Group Name - resourceGroup
          * Storage Account Name - storageAccount
