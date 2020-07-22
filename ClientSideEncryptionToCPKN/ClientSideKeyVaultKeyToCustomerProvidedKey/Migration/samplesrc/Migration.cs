@@ -17,7 +17,8 @@ namespace keyVaultClientSideToCustomerProvidedServerSide
         private static void EncryptWithCustomerProvidedKey(
             string connectionString,
             string containerName,
-            string fileName,
+            string blobName,
+            string blobNameAfterMigration,
             string filePath,
             ClientSideEncryptionOptions clientSideOption,
             byte[] keyBytes)
@@ -27,12 +28,9 @@ namespace keyVaultClientSideToCustomerProvidedServerSide
             BlobClient blobClient = new BlobClient(
                 connectionString,
                 containerName,
-                fileName).WithClientSideEncryptionOptions(clientSideOption);
+                blobName).WithClientSideEncryptionOptions(clientSideOption);
 
             blobClient.DownloadTo(downloadFilePath);
-
-            //Optional for encryption, change fileName to differentiate from original blob
-            fileName = "CPK" + fileName;
 
             //Set Blob Client Options with the given Customer Provided Key
             CustomerProvidedKey customerProvidedKey = new CustomerProvidedKey(keyBytes);
@@ -45,9 +43,9 @@ namespace keyVaultClientSideToCustomerProvidedServerSide
             blobClient = new BlobClient(
                 connectionString,
                 containerName,
-                fileName,
+                blobNameAfterMigration,
                 blobClientOptions);
-            blobClient.Upload(downloadFilePath);
+            blobClient.Upload(downloadFilePath, true);
         }
 
         //Delete files in the Data folder      
@@ -63,10 +61,11 @@ namespace keyVaultClientSideToCustomerProvidedServerSide
          * Azure Active Directory Tenant ID - tenantId
          * Service Principal Application ID - clientId
          * Storage Account Connection String- connectionString
-         * Key Vault Key Uri - keyVaultKeyUri
+         * Client Side Key Vault Key Uri - clientSideKeyVaultKeyUri
          * Key Wrap Algorithm - keyWrapAlgorithm
          * Container Name - containerName
          * Blob Name - blobName
+         * Blob Name After Migration - blobNameAfterMigration
          * Customer Provided Key for Server Side Encryption - serverSideCustomerProvidedKey
          */
         static void Main()
@@ -88,7 +87,7 @@ namespace keyVaultClientSideToCustomerProvidedServerSide
             string localFilePath = Path.Combine(localPath, Constants.blobName);
 
             //Get Uri for Key Vault key
-            Uri keyVaultKeyUri = new Uri(Constants.keyVaultKeyUri);
+            Uri keyVaultKeyUri = new Uri(Constants.clientSideKeyVaultKeyUri);
             //Create CryptographyClient using Key Vault Key
             CryptographyClient cryptographyClient = new CryptographyClient(keyVaultKeyUri, credential);
             //Set up Client Side Encryption Options used for Client Side Encryption
@@ -105,6 +104,7 @@ namespace keyVaultClientSideToCustomerProvidedServerSide
                     Constants.connectionString,
                     Constants.containerName,
                     Constants.blobName,
+                    Constants.blobNameAfterMigration,
                     localFilePath,
                     clientSideOptions,
                     localKeyBytes);

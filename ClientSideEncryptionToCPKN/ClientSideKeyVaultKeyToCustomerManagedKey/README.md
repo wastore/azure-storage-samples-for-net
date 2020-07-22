@@ -21,10 +21,11 @@ Requires an [Azure subscription](https://azure.microsoft.com/en-us/free/) and an
 * Resource Group Name - resourceGroup
 * Storage Account Name - storageAccount
 * Storage Account Connection String- connectionString
-* Key Vault Key Uri - keyVaultKeyUri
+* Client Side Key Vault Key Uri - clientSideKeyVaultKeyUri
+* Server Side Key Vault Key Uri (can Be same as Client Side Key) - serverSideKeyVaultKeyUri
 * Key Wrap Algorithm - keyWrapAlgorithm
 
-#### The sample uses names for the following from Constants.cs, which may be edited as needed:
+#### The sample uses names for the following from Constants.cs:
 * Container Name
 * Blob Name
 * Encryption Scope Name
@@ -35,23 +36,23 @@ Requires an [Azure subscription](https://azure.microsoft.com/en-us/free/) and an
 * Service Principal Application ID - clientId
 * Service Principal Password - clientSecret
 * Storage Account Connection String - connectionString
-* Key Vault Key Uri - keyVaultKeyUri
+* Client Side Key Vault Key Uri - clientSideKeyVaultKeyUri
 * Key Wrap Algorithm - keyWrapAlgorithm
 * Container Name - containerName
 * Blob Name - blobName
+* Blob Name After Migration (can be same as Blob Name)- blobNameAfterMigration
 * Encryption Scope Name - encryptionScopeName
 
 ## How To Use
 ### With ExampleSetup
 1. Navigate to ExampleSetup folder
 2. Enter values to App.config file
-3. Edit names in Constants.cs (Optional)
-4. Run 'dotnet build'
-5. Run 'dotnet run'
-6. Navigate to Migration folder
-7. Enter values to App.config file (Must match values entered into ExampleSetup's App.config file)
-8. Run 'dotnet build'
-9. Run 'dotnet run'
+3. Run 'dotnet build'
+4. Run 'dotnet run'
+5. Navigate to Migration folder
+6. Enter values to App.config file (Must match values entered into ExampleSetup's App.config file)
+7. Run 'dotnet build'
+8. Run 'dotnet run'
 
 ### Without ExampleSetup
 1. Navigate to Migration folder

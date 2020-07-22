@@ -14,7 +14,8 @@ namespace localKeyClientSideToCustomerProvidedServerSide
         private static void EncryptWithCustomerProvidedKey(
             string connectionString,
             string containerName,
-            string fileName,
+            string blobName,
+            string blobNameAfterMigration,
             string filePath,
             ClientSideEncryptionOptions clientSideOption,
             byte[] keyBytes)
@@ -24,11 +25,8 @@ namespace localKeyClientSideToCustomerProvidedServerSide
             BlobClient blobClient = new BlobClient(
                 connectionString,
                 containerName,
-                fileName).WithClientSideEncryptionOptions(clientSideOption);
+                blobName).WithClientSideEncryptionOptions(clientSideOption);
             blobClient.DownloadTo(downloadFilePath);
-
-            //Optional for encryption, change fileName to differentiate from original blob
-            fileName = "CPK" + fileName;
 
             //Set Blob Client Options with the given Customer Provided Key
             CustomerProvidedKey customerProvidedKey = new CustomerProvidedKey(keyBytes);
@@ -41,9 +39,9 @@ namespace localKeyClientSideToCustomerProvidedServerSide
             blobClient = new BlobClient(
                 connectionString,
                 containerName,
-                fileName,
+                blobNameAfterMigration,
                 blobClientOptions);
-            blobClient.Upload(downloadFilePath);
+            blobClient.Upload(downloadFilePath, true);
         }
 
         //Delete files in the Data folder  
@@ -61,6 +59,7 @@ namespace localKeyClientSideToCustomerProvidedServerSide
         * Customer Provided Key for Client Side Encryption - clientSideCustomerProvidedKey     
         * Container Name - containerName
         * Blob Name - blobName
+        * Blob Name After Migration - blobNameAfterMigration
         * Customer Provided Key for Server Side Encryption - serverSideCustomerProvidedKey
         */
         static void Main()
@@ -90,6 +89,7 @@ namespace localKeyClientSideToCustomerProvidedServerSide
                     Constants.connectionString,
                     Constants.containerName,
                     Constants.blobName,
+                    Constants.blobNameAfterMigration,
                     localFilePath,
                     clientSideOptions,
                     localKeyBytes);

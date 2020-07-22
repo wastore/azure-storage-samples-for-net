@@ -15,7 +15,8 @@ namespace keyVaultClientSideToMicrosoftManagedServerSide
         private static void EncryptWithMicrosoftManagedKey(
             string connectionString,
             string containerName,
-            string fileName,
+            string blobName,
+            string blobNameAfterMigration,
             string filePath,
             ClientSideEncryptionOptions clientSideOption,
             string encryptionScopeName)
@@ -25,11 +26,8 @@ namespace keyVaultClientSideToMicrosoftManagedServerSide
             BlobClient blobClient = new BlobClient(
                 connectionString,
                 containerName,
-                fileName).WithClientSideEncryptionOptions(clientSideOption);
+                blobName).WithClientSideEncryptionOptions(clientSideOption);
             blobClient.DownloadTo(downloadFilePath);
-
-            ////Optional for encryption, change fileName to differentiate from original blob
-            fileName = "MMK" + fileName;
 
             //Set Blob Client Options with the created Encryption Scope
             BlobClientOptions blobClientOptions = new BlobClientOptions()
@@ -41,9 +39,9 @@ namespace keyVaultClientSideToMicrosoftManagedServerSide
             blobClient = new BlobClient(
                 connectionString,
                 containerName,
-                fileName,
+                blobNameAfterMigration,
                 blobClientOptions);            
-            blobClient.Upload(downloadFilePath);
+            blobClient.Upload(downloadFilePath, true);
         }
 
         //Delete files in the Data folder            
@@ -60,10 +58,11 @@ namespace keyVaultClientSideToMicrosoftManagedServerSide
          * Service Principal Application ID - clientId
          * Service Principal Password - clientSecret
          * Storage Account Connection String- connectionString
-         * Key Vault Key Uri - keyVaultKeyUri
+         * Client Side Key Vault Key Uri - clientSideKeyVaultKeyUri
          * Key Wrap Algorithm - keyWrapAlgorithm
          * Container Name - containerName
          * Blob Name - blobName
+         * Blob Name After Migration - blobNameAfterMigration
          * Encryption Scope Name - encryptionScopeName 
          */
         static void Main()
@@ -82,7 +81,7 @@ namespace keyVaultClientSideToMicrosoftManagedServerSide
             string localFilePath = Path.Combine(localPath, Constants.blobName);
 
             //Get Uri for Key Vault key
-            Uri keyVaultKeyUri = new Uri(Constants.keyVaultKeyUri);
+            Uri keyVaultKeyUri = new Uri(Constants.clientSideKeyVaultKeyUri);
             //Create CryptographyClient using Key Vault Key
             CryptographyClient cryptographyClient = new CryptographyClient(keyVaultKeyUri, credential);
             //Set up Client Side Encryption Options used for Client Side Encryption
@@ -99,6 +98,7 @@ namespace keyVaultClientSideToMicrosoftManagedServerSide
                     Constants.connectionString,
                     Constants.containerName,
                     Constants.blobName,
+                    Constants.blobNameAfterMigration,
                     localFilePath,
                     clientSideOptions,
                     Constants.encryptionScopeName);

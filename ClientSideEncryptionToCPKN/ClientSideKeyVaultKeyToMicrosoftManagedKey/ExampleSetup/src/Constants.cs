@@ -12,7 +12,7 @@ namespace ExampleSetup
         public static string resourceGroup = ConfigurationManager.AppSettings["resourceGroup"];
         public static string storageAccount = ConfigurationManager.AppSettings["storageAccount"];
         public static string connectionString = ConfigurationManager.AppSettings["connectionString"];
-        public static string keyVaultKeyUri = ConfigurationManager.AppSettings["keyVaultKeyUri"];
+        public static string clientSideKeyVaultKeyUri = ConfigurationManager.AppSettings["clientSideKeyVaultKeyUri"];
         public static string keyWrapAlgorithm = ConfigurationManager.AppSettings["keyWrapAlgorithm"];
 
         //Used only in SetupForExample method to create sample blob

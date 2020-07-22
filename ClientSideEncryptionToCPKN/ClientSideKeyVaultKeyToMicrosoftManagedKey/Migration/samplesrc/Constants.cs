@@ -12,10 +12,11 @@ namespace keyVaultClientSideToMicrosoftManagedServerSide
         public static string resourceGroup = ConfigurationManager.AppSettings["resourceGroup"];
         public static string storageAccount = ConfigurationManager.AppSettings["storageAccount"];
         public static string connectionString = ConfigurationManager.AppSettings["connectionString"];
-        public static string keyVaultKeyUri = ConfigurationManager.AppSettings["keyVaultKeyUri"];
+        public static string clientSideKeyVaultKeyUri = ConfigurationManager.AppSettings["clientSideKeyVaultKeyUri"];
         public static string keyWrapAlgorithm = ConfigurationManager.AppSettings["keyWrapAlgorithm"];
         public static string containerName = ConfigurationManager.AppSettings["containerName"];
         public static string blobName = ConfigurationManager.AppSettings["blobName"];
+        public static string blobNameAfterMigration = ConfigurationManager.AppSettings["blobNameAfterMigration"];
         public static string encryptionScopeName = ConfigurationManager.AppSettings["encryptionScopeName"];
     }
 }

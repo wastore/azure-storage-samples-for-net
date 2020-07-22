@@ -12,7 +12,8 @@ namespace localKeyClientSideToMicrosoftManagedServerSide
         private static void EncryptWithMicrosoftManagedKey(
             string connectionString,
             string containerName,
-            string fileName,
+            string blobName,
+            string blobNameAfterMigration,
             string filePath,
             ClientSideEncryptionOptions clientSideOption,
             string encryptionScopeName)
@@ -22,11 +23,8 @@ namespace localKeyClientSideToMicrosoftManagedServerSide
             BlobClient blobClient = new BlobClient(
                 connectionString,
                 containerName,
-                fileName).WithClientSideEncryptionOptions(clientSideOption);
+                blobName).WithClientSideEncryptionOptions(clientSideOption);
             blobClient.DownloadTo(downloadFilePath);
-
-            //Optional for encryption, change fileName to differentiate from original blob
-            fileName = "MMK" + fileName;
 
             //Set Blob Client Options with the created Encryption Scope
             BlobClientOptions blobClientOptions = new BlobClientOptions()
@@ -38,9 +36,9 @@ namespace localKeyClientSideToMicrosoftManagedServerSide
             blobClient = new BlobClient(
                 connectionString,
                 containerName,
-                fileName,
+                blobNameAfterMigration,
                 blobClientOptions);            
-            blobClient.Upload(downloadFilePath);
+            blobClient.Upload(downloadFilePath, true);
         }
 
         //Delete files in the Data folder  
@@ -58,6 +56,7 @@ namespace localKeyClientSideToMicrosoftManagedServerSide
         * Customer Provided Key for Client Side Encryption - clientSideCustomerProvidedKey
         * Container Name - containerName
         * Blob Name - blobName
+        * Blob Name After Migration - blobNameAfterMigration
         * Encryption Scope Name - encryptionScopeName
         */
         static void Main()
@@ -84,6 +83,7 @@ namespace localKeyClientSideToMicrosoftManagedServerSide
                     Constants.connectionString,
                     Constants.containerName,
                     Constants.blobName,
+                    Constants.blobNameAfterMigration,
                     localFilePath,
                     clientSideOptions,
                     Constants.encryptionScopeName);

@@ -14,7 +14,8 @@ namespace localKeyClientSideToCustomerManagedServerSide
         private static void EncryptWithCustomerManagedKey(
             string connectionString,
             string containerName,
-            string fileName,
+            string blobName,
+            string blobNameAfterMigration,
             string filePath,
             ClientSideEncryptionOptions clientSideOption,
             string encryptionScopeName)
@@ -24,12 +25,9 @@ namespace localKeyClientSideToCustomerManagedServerSide
             BlobClient blobClient = new BlobClient(
                 connectionString,
                 containerName,
-                fileName).WithClientSideEncryptionOptions(clientSideOption);
+                blobName).WithClientSideEncryptionOptions(clientSideOption);
 
             blobClient.DownloadTo(downloadFilePath);
-
-            //Optional for encryption, change fileName to differentiate from original blob
-            fileName = "CMK" + fileName;
 
             //Set Blob Client Options with the created Encryption Scope
             BlobClientOptions blobClientOptions = new BlobClientOptions()
@@ -41,9 +39,9 @@ namespace localKeyClientSideToCustomerManagedServerSide
             blobClient = new BlobClient(
                 connectionString,
                 containerName,
-                fileName,
+                blobNameAfterMigration,
                 blobClientOptions);
-            blobClient.Upload(downloadFilePath);
+            blobClient.Upload(downloadFilePath, true);
         }
 
         //Delete files in the Data folder    
@@ -64,18 +62,11 @@ namespace localKeyClientSideToCustomerManagedServerSide
         * Customer Provided Key for Client Side Encryption - clientSideCustomerProvidedKey    
         * Container Name - containerName
         * Blob Name - blobName
+        * Blob Name After Migration - blobNameAfterMigration
         * Encryption Scope Name - encryptionScopeName
         */
         static void Main()
         {
-            //Credentials of Service Principal
-            TokenCredential credential =
-                new ClientSecretCredential(
-                    Constants.tenantId,
-                    Constants.clientId,
-                    Constants.clientSecret
-                    );
-
             //File Path for local file used to download and reupload
             string localPath = "./data" + Guid.NewGuid().ToString() + "/";
             Directory.CreateDirectory(localPath);
@@ -98,6 +89,7 @@ namespace localKeyClientSideToCustomerManagedServerSide
                     Constants.connectionString,
                     Constants.containerName,
                     Constants.blobName,
+                    Constants.blobNameAfterMigration,
                     localFilePath,
                     clientSideOptions,
                     Constants.encryptionScopeName);

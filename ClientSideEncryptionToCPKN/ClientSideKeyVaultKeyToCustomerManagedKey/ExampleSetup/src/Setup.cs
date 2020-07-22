@@ -22,7 +22,8 @@ namespace ExampleSetup
          * Resource Group Name - resourceGroup
          * Storage Account Name - storageAccount
          * Storage Account Connection String- connectionString
-         * Key Vault Key Uri - keyVaultKeyUri
+         * Client Side Key Vault Key Uri - clientSideKeyVaultKeyUri
+         * Server Side Key Vault Key Uri - serverSideKeyVaultKeyUri
          * Key Wrap Algorithm - keyWrapAlgorithm
          * 
          * Creates example objects using names from Constants.cs, which may be edited as needed
@@ -33,7 +34,7 @@ namespace ExampleSetup
             string fileName,
             string encryptionScopeName,
             ClientSideEncryptionOptions clientSideOption,
-            Uri keyVaultKeyUri)
+            Uri serverSideKeyVaultKeyUri)
         {
             //Create example Container and .txt file, upload .txt file as client side encrypted blob
             BlobContainerClient containerClient = blobService.CreateBlobContainer(containerName);
@@ -44,7 +45,7 @@ namespace ExampleSetup
             blobClient.Upload(Path.Combine(Constants.samplePath, Constants.blobName));
             Console.WriteLine("Uploaded to Blob storage as blob: \n\t {0}\n", blobClient.Uri);
 
-            CreateEncryptionScopeCMK(encryptionScopeName, keyVaultKeyUri);
+            CreateEncryptionScopeCMK(encryptionScopeName, serverSideKeyVaultKeyUri);
         }
 
         //Runs Azure CLI script that creates an encryption scope that uses customer managed keys with the specified Azure Key Vault key
@@ -66,9 +67,9 @@ namespace ExampleSetup
                     );
 
             //Get Uri for Key Vault key
-            Uri keyVaultKeyUri = new Uri(Constants.keyVaultKeyUri);
+            Uri clientSideKeyVaultKeyUri = new Uri(Constants.clientSideKeyVaultKeyUri);
             //Create CryptographyClient using Key Vault Key
-            CryptographyClient cryptographyClient = new CryptographyClient(keyVaultKeyUri, credential);
+            CryptographyClient cryptographyClient = new CryptographyClient(clientSideKeyVaultKeyUri, credential);
             //Set up Client Side Encryption Options used for Client Side Encryption
             ClientSideEncryptionOptions clientSideOptions = new ClientSideEncryptionOptions(ClientSideEncryptionVersion.V1_0)
             {
@@ -86,7 +87,7 @@ namespace ExampleSetup
                 Constants.blobName,
                 Constants.encryptionScopeName,
                 clientSideOptions,
-                keyVaultKeyUri);
+                Constants.serverSideKeyVaultKeyUri);
 
             Console.WriteLine("Completed creation of example container, blob, and encryption scope");
         }

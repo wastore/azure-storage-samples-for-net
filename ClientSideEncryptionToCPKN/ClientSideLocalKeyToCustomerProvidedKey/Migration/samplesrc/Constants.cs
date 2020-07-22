@@ -10,6 +10,7 @@ namespace localKeyClientSideToCustomerProvidedServerSide
         public static string clientSideCustomerProvidedKey = ConfigurationManager.AppSettings["clientSideCustomerProvidedKey"];
         public static string containerName = ConfigurationManager.AppSettings["containerName"];
         public static string blobName = ConfigurationManager.AppSettings["blobName"];
+        public static string blobNameAfterMigration = ConfigurationManager.AppSettings["blobNameAfterMigration"];
         public static string serverSideCustomerProvidedKey = ConfigurationManager.AppSettings["serverSideCustomerProvidedKey"];
     }
 }

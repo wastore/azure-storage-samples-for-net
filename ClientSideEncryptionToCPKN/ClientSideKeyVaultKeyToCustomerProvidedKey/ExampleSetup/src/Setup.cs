@@ -18,7 +18,7 @@ namespace ExampleSetup
          * Service Principal Application ID - clientId
          * Service Principal Password - clientSecret
          * Storage Account Connection String- connectionString
-         * Key Vault Key Uri - keyVaultKeyUri
+         * Client Side Key Vault Key Uri - clientSideKeyVaultKeyUri
          * Key Wrap Algorithm - keyWrapAlgorithm
          * 
          * Creates example objects using names from Constants.cs, which may be edited as needed
@@ -50,7 +50,7 @@ namespace ExampleSetup
                     );
 
             //Get Uri for Key Vault key
-            Uri keyVaultKeyUri = new Uri(Constants.keyVaultKeyUri);
+            Uri keyVaultKeyUri = new Uri(Constants.clientSideKeyVaultKeyUri);
             //Create CryptographyClient using Key Vault Key
             CryptographyClient cryptographyClient = new CryptographyClient(keyVaultKeyUri, credential);
             //Set up Client Side Encryption Options used for Client Side Encryption

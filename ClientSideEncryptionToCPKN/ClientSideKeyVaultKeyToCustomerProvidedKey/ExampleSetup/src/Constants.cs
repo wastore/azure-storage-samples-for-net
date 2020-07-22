@@ -9,7 +9,7 @@ namespace ExampleSetup
         public static string clientId = ConfigurationManager.AppSettings["clientId"];
         public static string clientSecret = ConfigurationManager.AppSettings["clientSecret"];
         public static string connectionString = ConfigurationManager.AppSettings["connectionString"];
-        public static string keyVaultKeyUri = ConfigurationManager.AppSettings["keyVaultKeyUri"];
+        public static string clientSideKeyVaultKeyUri = ConfigurationManager.AppSettings["clientSideKeyVaultKeyUri"];
         public static string keyWrapAlgorithm = ConfigurationManager.AppSettings["keyWrapAlgorithm"];
 
         //Used only in SetupForExample method to create sample blob
