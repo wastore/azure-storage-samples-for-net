@@ -15,6 +15,30 @@ namespace ExampleSetup
          * 
          * Creates example objects using names from Constants.cs, which may be edited as needed
          */
+        static void Main()
+        {
+            //Creating Key Encryption Key object for Client Side Encryption
+            SampleKeyEncryptionKey keyEncryption = new SampleKeyEncryptionKey(Constants.ClientSideCustomerProvidedKey);
+
+            //Set up Client Side Encryption Options used for Client Side Encryption
+            ClientSideEncryptionOptions clientSideOptions = new ClientSideEncryptionOptions(ClientSideEncryptionVersion.V1_0)
+            {
+                KeyEncryptionKey = keyEncryption,
+                KeyWrapAlgorithm = Constants.KeyWrapAlgorithm
+            };
+
+            //Create Blob Service Client
+            BlobServiceClient blobServiceClient = new BlobServiceClient(Constants.ConnectionString);
+
+            //Run Setup Function that creates and example container and blob
+            SetupForExample(
+                blobServiceClient,
+                Constants.ContainerName,
+                Constants.BlobName,
+                clientSideOptions);
+        }
+
+        //Creates example container and client side encrypted blob for sample
         public static void SetupForExample(
             BlobServiceClient blobService,
             string containerName,
@@ -28,31 +52,8 @@ namespace ExampleSetup
             BlobClient blobClient = containerClient.GetBlobClient(fileName).WithClientSideEncryptionOptions(clientSideOption);
 
             //Upload blob with client side encryption
-            blobClient.Upload(Path.Combine(Constants.samplePath, Constants.blobName));
+            blobClient.Upload(Path.Combine(Constants.SamplePath, Constants.BlobName));
             Console.WriteLine("Uploaded to Blob storage as blob: \n\t {0}\n", blobClient.Uri);
-        }
-
-        static void Main()
-        {
-            //Creating Key Encryption Key object for Client Side Encryption
-            SampleKeyEncryptionKey keyEncryption = new SampleKeyEncryptionKey(Constants.clientSideCustomerProvidedKey);
-
-            //Set up Client Side Encryption Options used for Client Side Encryption
-            ClientSideEncryptionOptions clientSideOptions = new ClientSideEncryptionOptions(ClientSideEncryptionVersion.V1_0)
-            {
-                KeyEncryptionKey = keyEncryption,
-                KeyWrapAlgorithm = Constants.keyWrapAlgorithm
-            };
-
-            //Create Blob Service Client
-            BlobServiceClient blobServiceClient = new BlobServiceClient(Constants.connectionString);
-
-            //Run Setup Function that creates and example container and blob
-            SetupForExample(
-                blobServiceClient,
-                Constants.containerName,
-                Constants.blobName,
-                clientSideOptions);
-        }
+        }        
     }
 }

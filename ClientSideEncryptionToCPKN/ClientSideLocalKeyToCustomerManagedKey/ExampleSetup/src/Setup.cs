@@ -39,7 +39,7 @@ namespace ExampleSetup
             BlobClient blobClient = containerClient.GetBlobClient(fileName).WithClientSideEncryptionOptions(clientSideOption);
 
             //Upload blob with client side encryption
-            blobClient.Upload(Path.Combine(Constants.samplePath, Constants.blobName));
+            blobClient.Upload(Path.Combine(Constants.SamplePath, Constants.BlobName));
             Console.WriteLine("Uploaded to Blob storage as blob: \n\t {0}\n", blobClient.Uri);
 
             //Create key and use created key to create encryption scope
@@ -61,7 +61,7 @@ namespace ExampleSetup
         private static void CreateEncryptionScopeCMK(string encryptionScopeName, Uri keyVaultKeyUri)
         {
             Process process = Process.Start("CMD.exe", "/C az storage account encryption-scope create --name " + encryptionScopeName
-                + " -s Microsoft.KeyVault -u " + keyVaultKeyUri.ToString() + " --account-name " + Constants.storageAccount + " -g " + Constants.resourceGroup + " --subscription " + Constants.subscriptionId);
+                + " -s Microsoft.KeyVault -u " + keyVaultKeyUri.ToString() + " --account-name " + Constants.StorageAccount + " -g " + Constants.ResourceGroup + " --subscription " + Constants.SubscriptionId);
             process.WaitForExit();
         }
         
@@ -70,32 +70,32 @@ namespace ExampleSetup
             //Credentials of Service Principal
             TokenCredential credential =
                 new ClientSecretCredential(
-                    Constants.tenantId,
-                    Constants.clientId,
-                    Constants.clientSecret
+                    Constants.TenantId,
+                    Constants.ClientId,
+                    Constants.ClientSecret
                     );
             //Creating Key Encryption Key object for Client Side Encryption
-            SampleKeyEncryptionKey keyEncryptionKey = new SampleKeyEncryptionKey(Constants.clientSideCustomerProvidedKey);
+            SampleKeyEncryptionKey keyEncryptionKey = new SampleKeyEncryptionKey(Constants.ClientSideCustomerProvidedKey);
 
             //Set up Client Side Encryption Options used for Client Side Encryption
             ClientSideEncryptionOptions clientSideOptions = new ClientSideEncryptionOptions(ClientSideEncryptionVersion.V1_0)
             {
                 KeyEncryptionKey = keyEncryptionKey,
-                KeyWrapAlgorithm = Constants.keyWrapAlgorithm
+                KeyWrapAlgorithm = Constants.KeyWrapAlgorithm
             };
 
             //Create Blob Service Client
-            BlobServiceClient blobServiceClient = new BlobServiceClient(Constants.connectionString);
+            BlobServiceClient blobServiceClient = new BlobServiceClient(Constants.ConnectionString);
 
             //Run Setup Function that creates and example container and blob
             SetupForExample(
                 blobServiceClient,
-                Constants.containerName,
-                Constants.blobName,
-                Constants.encryptionScopeName,
+                Constants.ContainerName,
+                Constants.BlobName,
+                Constants.EncryptionScopeName,
                 clientSideOptions,
-                Constants.keyVaultName,
-                Constants.keyVaultKeyName,
+                Constants.KeyVaultName,
+                Constants.KeyVaultKeyName,
                 credential);
 
             Console.WriteLine("Completed creation of example container, blob, Key Vault key, and encryption scope");

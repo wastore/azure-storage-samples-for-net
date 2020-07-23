@@ -5,16 +5,16 @@ namespace ExampleSetup
     public class Constants
     {
         //Parse config file values
-        public static string tenantId = ConfigurationManager.AppSettings["tenantId"];
-        public static string clientId = ConfigurationManager.AppSettings["clientId"];
-        public static string clientSecret = ConfigurationManager.AppSettings["clientSecret"];
-        public static string connectionString = ConfigurationManager.AppSettings["connectionString"];
-        public static string clientSideKeyVaultKeyUri = ConfigurationManager.AppSettings["clientSideKeyVaultKeyUri"];
-        public static string keyWrapAlgorithm = ConfigurationManager.AppSettings["keyWrapAlgorithm"];
+        public static string TenantId = ConfigurationManager.AppSettings["tenantId"];
+        public static string ClientId = ConfigurationManager.AppSettings["clientId"];
+        public static string ClientSecret = ConfigurationManager.AppSettings["clientSecret"];
+        public static string ConnectionString = ConfigurationManager.AppSettings["connectionString"];
+        public static string ClientSideKeyVaultKeyUri = ConfigurationManager.AppSettings["clientSideKeyVaultKeyUri"];
+        public static string KeyWrapAlgorithm = ConfigurationManager.AppSettings["keyWrapAlgorithm"];
 
         //Used only in SetupForExample method to create sample blob
-        public const string containerName = "clientsidelocalkeytocustomerprovidedkeysample";
-        public const string blobName = "blobExample.txt";
-        public const string samplePath = "./src/";
+        public const string ContainerName = "clientsidelocalkeytocustomerprovidedkeysample";
+        public const string BlobName = "blobExample.txt";
+        public const string SamplePath = "./src/";
     }
 }

@@ -20,6 +20,33 @@ namespace ExampleSetup
          * 
          * Creates example objects using names from Constants.cs, which may be edited as needed
          */
+        static void Main()
+        {
+            //Creating Key Encryption Key object for Client Side Encryption
+            SampleKeyEncryptionKey keyEncryption = new SampleKeyEncryptionKey(Constants.ClientSideCustomerProvidedKey);
+
+            //Set up Client Side Encryption Options used for Client Side Encryption
+            ClientSideEncryptionOptions clientSideOptions = new ClientSideEncryptionOptions(ClientSideEncryptionVersion.V1_0)
+            {
+                KeyEncryptionKey = keyEncryption,
+                KeyWrapAlgorithm = Constants.KeyWrapAlgorithm
+            };
+
+            //Create Blob Service Client
+            BlobServiceClient blobServiceClient = new BlobServiceClient(Constants.ConnectionString);
+
+            //Run Setup Function that creates and example container and blob
+            SetupForExample(
+                blobServiceClient,
+                Constants.ContainerName,
+                Constants.BlobName,
+                Constants.EncryptionScopeName,
+                clientSideOptions);
+
+            Console.WriteLine("Completed creation of example container, blob, and encryption scope");
+        }
+
+        //Creates example container, client side encrypted blob, Key Vault key, and encryption scope for sample
         public static void SetupForExample(
             BlobServiceClient blobService,
             string containerName,
@@ -32,7 +59,7 @@ namespace ExampleSetup
             BlobContainerClient containerClient = blobService.CreateBlobContainer(containerName);
             //Create BlobClient with Client Side Encryption Options to upload client side encrypted data
             BlobClient blobClient = containerClient.GetBlobClient(fileName).WithClientSideEncryptionOptions(clientSideOption);
-            blobClient.Upload(Path.Combine(Constants.samplePath, Constants.blobName));
+            blobClient.Upload(Path.Combine(Constants.SamplePath, Constants.BlobName));
             Console.WriteLine("Uploaded to Blob storage as blob: \n\t {0}\n", blobClient.Uri);
 
             Setup.CreateEncryptionScopeMMK(encryptionScopeName);
@@ -42,34 +69,8 @@ namespace ExampleSetup
         private static void CreateEncryptionScopeMMK(string encryptionScopeName)
         {
             Process process = Process.Start("CMD.exe", "/C az storage account encryption-scope create --name " + encryptionScopeName
-                + "MMK -s Microsoft.Storage --account-name " + Constants.storageAccount + " -g " + Constants.resourceGroup + " --subscription " + Constants.subscriptionId);
+                + "MMK -s Microsoft.Storage --account-name " + Constants.StorageAccount + " -g " + Constants.ResourceGroup + " --subscription " + Constants.SubscriptionId);
             process.WaitForExit();
-        }
-        
-        static void Main()
-        {
-            //Creating Key Encryption Key object for Client Side Encryption
-            SampleKeyEncryptionKey keyEncryption = new SampleKeyEncryptionKey(Constants.clientSideCustomerProvidedKey);
-
-            //Set up Client Side Encryption Options used for Client Side Encryption
-            ClientSideEncryptionOptions clientSideOptions = new ClientSideEncryptionOptions(ClientSideEncryptionVersion.V1_0)
-            {
-                KeyEncryptionKey = keyEncryption,
-                KeyWrapAlgorithm = Constants.keyWrapAlgorithm
-            };
-
-            //Create Blob Service Client
-            BlobServiceClient blobServiceClient = new BlobServiceClient(Constants.connectionString);
-
-            //Run Setup Function that creates and example container and blob
-            SetupForExample(
-                blobServiceClient,
-                Constants.containerName,
-                Constants.blobName,
-                Constants.encryptionScopeName,
-                clientSideOptions);
-
-            Console.WriteLine("Completed creation of example container, blob, and encryption scope");
-        }
+        }        
     }
 }

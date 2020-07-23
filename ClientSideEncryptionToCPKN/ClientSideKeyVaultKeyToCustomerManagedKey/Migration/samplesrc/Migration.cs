@@ -11,7 +11,68 @@ using System.IO;
 namespace keyVaultClientSideToCustomerManagedServerSide
 {
     class Migration
-    {   
+    {
+        /*
+         * Program migrates a client side encrypted blob to server side encryption using an encryption scope with a customer managed key    
+         * 
+         * NOTE: This program requires the following to be stored in the App.Config file:
+         * Azure Active Directory Tenant ID - tenantId
+         * Service Principal Application ID - clientId
+         * Service Principal Password - clientSecret
+         * Storage Account Connection String- connectionString
+         * Client Side Key Vault Key Uri - clientSideKeyVaultKeyUri
+         * Key Wrap Algorithm - keyWrapAlgorithm
+         * Container Name - containerName
+         * Blob Name - blobName
+         * Blob Name After Migration - blobNameAfterMigration
+         * Encryption Scope Name - encryptionScopeName 
+         */
+        static void Main()
+        {
+            //Credentials of Service Principal
+            TokenCredential credential =
+                new ClientSecretCredential(
+                    Constants.TenantId,
+                    Constants.ClientId,
+                    Constants.ClientSecret
+                    );
+
+            //File Path for local file used to download and reupload
+            string localPath = "./data" + Guid.NewGuid().ToString() + "/";
+            Directory.CreateDirectory(localPath);
+            string localFilePath = Path.Combine(localPath, Constants.BlobName);
+
+            //Get Uri for Key Vault key
+            Uri keyVaultKeyUri = new Uri(Constants.ClientSideKeyVaultKeyUri);
+            //Create CryptographyClient using Key Vault Key
+            CryptographyClient cryptographyClient = new CryptographyClient(keyVaultKeyUri, credential);
+            //Set up Client Side Encryption Options used for Client Side Encryption
+            ClientSideEncryptionOptions clientSideOptions = new ClientSideEncryptionOptions(ClientSideEncryptionVersion.V1_0)
+            {
+                KeyEncryptionKey = cryptographyClient,
+                KeyWrapAlgorithm = Constants.KeyWrapAlgorithm
+            };
+
+            try
+            {
+                //Convert Client Side Encryption Blob to Server Side Encrytion with Customer Managed Keys
+                EncryptWithCustomerManagedKey(
+                    Constants.ConnectionString,
+                    Constants.ContainerName,
+                    Constants.BlobName,
+                    Constants.BlobNameAfterMigration,
+                    localFilePath,
+                    clientSideOptions,
+                    Constants.EncryptionScopeName);
+            }
+            finally
+            {
+                //Delete downloaded files
+                CleanUp(localPath);
+                Console.WriteLine("Completed migration to Customer Managed Key Server Side Encryption");
+            }
+        }
+
         //Downloads and decrypts client side encrypted blob, then reuploads blob with server side encryption using an encryption scope with a customer managed key
         private static void EncryptWithCustomerManagedKey(
             string connectionString,
@@ -50,67 +111,6 @@ namespace keyVaultClientSideToCustomerManagedServerSide
         public static void CleanUp(string path)
         {   
             Directory.Delete(path, true);
-        }
-
-        /*
-         * Program migrates a client side encrypted blob to server side encryption using an encryption scope with a customer managed key    
-         * 
-         * NOTE: This program requires the following to be stored in the App.Config file:
-         * Azure Active Directory Tenant ID - tenantId
-         * Service Principal Application ID - clientId
-         * Service Principal Password - clientSecret
-         * Storage Account Connection String- connectionString
-         * Client Side Key Vault Key Uri - clientSideKeyVaultKeyUri
-         * Key Wrap Algorithm - keyWrapAlgorithm
-         * Container Name - containerName
-         * Blob Name - blobName
-         * Blob Name After Migration - blobNameAfterMigration
-         * Encryption Scope Name - encryptionScopeName 
-         */
-        static void Main()
-        {
-            //Credentials of Service Principal
-            TokenCredential credential =
-                new ClientSecretCredential(
-                    Constants.tenantId,
-                    Constants.clientId,
-                    Constants.clientSecret
-                    );
-            
-            //File Path for local file used to download and reupload
-            string localPath = "./data" + Guid.NewGuid().ToString() + "/";
-            Directory.CreateDirectory(localPath);
-            string localFilePath = Path.Combine(localPath, Constants.blobName);
-
-            //Get Uri for Key Vault key
-            Uri keyVaultKeyUri = new Uri(Constants.clientSideKeyVaultKeyUri);
-            //Create CryptographyClient using Key Vault Key
-            CryptographyClient cryptographyClient = new CryptographyClient(keyVaultKeyUri, credential);
-            //Set up Client Side Encryption Options used for Client Side Encryption
-            ClientSideEncryptionOptions clientSideOptions = new ClientSideEncryptionOptions(ClientSideEncryptionVersion.V1_0)
-            {
-                KeyEncryptionKey = cryptographyClient,
-                KeyWrapAlgorithm = Constants.keyWrapAlgorithm
-            };
-
-            try
-            {
-                //Convert Client Side Encryption Blob to Server Side Encrytion with Customer Managed Keys
-                EncryptWithCustomerManagedKey(
-                    Constants.connectionString,
-                    Constants.containerName,
-                    Constants.blobName,
-                    Constants.blobNameAfterMigration,
-                    localFilePath,
-                    clientSideOptions,
-                    Constants.encryptionScopeName);
-            }
-            finally
-            {
-                //Delete downloaded files
-                CleanUp(localPath);
-                Console.WriteLine("Completed migration to Customer Managed Key Server Side Encryption");
-            }
-        }
+        }        
     }
 }

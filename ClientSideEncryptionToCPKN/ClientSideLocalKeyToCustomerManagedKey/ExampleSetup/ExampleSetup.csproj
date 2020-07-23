@@ -8,7 +8,7 @@
   <ItemGroup>
     <PackageReference Include="Azure.Identity" Version="1.1.1" />
     <PackageReference Include="Azure.Security.KeyVault.Keys" Version="4.0.4" />
-    <PackageReference Include="Azure.Storage.Blobs" Version="12.5.0-preview.1" />
+    <PackageReference Include="Azure.Storage.Blobs" Version="12.5.0-preview.5" />
     <PackageReference Include="System.Configuration.Abstractions" Version="2.0.2.45" />
   </ItemGroup>
 
