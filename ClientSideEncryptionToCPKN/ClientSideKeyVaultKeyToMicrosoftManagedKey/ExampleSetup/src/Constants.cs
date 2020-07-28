@@ -16,7 +16,7 @@ namespace ExampleSetup
         public static string KeyWrapAlgorithm = ConfigurationManager.AppSettings["keyWrapAlgorithm"];
 
         //Used only in SetupForExample method to create sample blob
-        public const string ContainerName = "clientsidelocalkeytocustomerprovidedkeysample";
+        public const string ContainerName = "clientsidekeyvaultkeytomicrosoftmanagedkeysample";
         public const string BlobName = "blobExample.txt";
         public const string EncryptionScopeName = "exampleencryptionscope";
         public const string SamplePath = "./src/";
