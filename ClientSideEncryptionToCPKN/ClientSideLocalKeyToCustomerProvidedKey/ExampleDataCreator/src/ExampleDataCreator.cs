@@ -6,7 +6,7 @@ using System.IO;
 
 namespace ExampleSetup
 {
-    class Setup
+    class ExampleDataCreator
     {
         /*Creates example container and client side encrypted blob for sample
          * 
