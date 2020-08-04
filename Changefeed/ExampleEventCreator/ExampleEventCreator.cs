@@ -22,7 +22,7 @@ namespace ExampleEventCreator
                 BlobClient blobClient = new BlobClient(connectionString, containerName, "exampleblob" + i.ToString());
                 blobClient.Upload(upStream,true);
             }
-            Console.WriteLine("Done");
+            Console.WriteLine("Finished creating example events");
         }
     }
 }

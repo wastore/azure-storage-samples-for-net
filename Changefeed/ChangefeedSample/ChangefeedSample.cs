@@ -3,11 +3,12 @@ using Microsoft.Azure.WebJobs;
 using Microsoft.Extensions.Logging;
 using Azure.Storage.Blobs;
 using Azure.Storage.Blobs.ChangeFeed;
+using Azure.Storage.Blobs.ChangeFeed.Models;
 using Azure;
 using System.IO;
 using System.Text;
 
-namespace changefeedjd
+namespace ChangeFeedSample
 {
     public static class ChangefeedSample
     {
@@ -15,8 +16,8 @@ namespace changefeedjd
          * The program iterates through the changefeed using a cursor, which will be saved in a container of the specified storage account. 
          * Before starting the program, delete the cursor from previous runs from the storage account, if it exists
          */
-        [FunctionName("Function1")]
-        public static async void Run([TimerTrigger("0 */1 * * * *")]TimerInfo myTimer, ILogger log)
+        [FunctionName("ChangeFeedSample")]
+        public static async void Run([TimerTrigger("0 */30 * * * *")]TimerInfo myTimer, ILogger log)
         {
             string connectionString = "CONNECTION_STRING";
             string containerName = "example";
@@ -37,8 +38,7 @@ namespace changefeedjd
                 var stream = new MemoryStream();
                 blobClient.DownloadTo(stream);
                 continuationToken = Encoding.UTF8.GetString(stream.ToArray());
-            }
-            
+            }            
             else
             {
                 //If the continuationToken does not exist in the blob, get the continuationToken from the first item
