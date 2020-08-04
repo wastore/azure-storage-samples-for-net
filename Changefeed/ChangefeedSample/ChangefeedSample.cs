@@ -20,9 +20,9 @@ namespace ChangeFeedSample
         public static async void Run([TimerTrigger("0 */30 * * * *")]TimerInfo myTimer, ILogger log)
         {
             string connectionString = "CONNECTION_STRING";
-            string containerName = "example";
 
-            //Predicate to filter events from Changefeed
+            //Example predicate to filter events from Changefeed
+            string containerName = "test-changefeed-container";
             Predicate<BlobChangeFeedEvent> containerCheck = (BlobChangeFeedEvent changeFeedEvent) => { return changeFeedEvent.Subject.Contains("/containers/" + containerName + "/"); };
                         
             BlobServiceClient blobServiceClient = new BlobServiceClient(connectionString);
