@@ -7,6 +7,7 @@ using Azure.Storage.Blobs.ChangeFeed.Models;
 using Azure;
 using System.IO;
 using System.Text;
+using System.Linq;
 
 namespace ChangeFeedSample
 {
@@ -17,7 +18,7 @@ namespace ChangeFeedSample
          * Before starting the program, delete the cursor from previous runs from the storage account, if it exists
          */
         [FunctionName("ChangeFeedSample")]
-        public static async void Run([TimerTrigger("0 */30 * * * *")]TimerInfo myTimer, ILogger log)
+        public static void Run([TimerTrigger("0 */30 * * * *")]TimerInfo myTimer, ILogger log)
         {
             string connectionString = "CONNECTION_STRING";
 
@@ -42,28 +43,27 @@ namespace ChangeFeedSample
             else
             {
                 //If the continuationToken does not exist in the blob, get the continuationToken from the first item
-                await foreach (Page<BlobChangeFeedEvent> page in changeFeedClient.GetChangesAsync().AsPages(pageSizeHint: 1))
+                Page<BlobChangeFeedEvent> page = changeFeedClient.GetChanges().AsPages(pageSizeHint: 1).First<Page<BlobChangeFeedEvent>>();
+                BlobChangeFeedEvent changeFeedEvent = page.Values.First<BlobChangeFeedEvent>();
+
+                if (containerCheck.Invoke(changeFeedEvent))
                 {
+                    log.LogInformation($"event: {changeFeedEvent.EventType} at {changeFeedEvent.Subject.Replace("/blobServices/default", "")} on {changeFeedEvent.EventTime}");
+                }
+                continuationToken = page.ContinuationToken;                             
+            }      
+
+            //Loop through the events in Changefeed with the continuationToken
+            foreach (Page<BlobChangeFeedEvent> page in changeFeedClient.GetChanges(continuationToken: continuationToken).AsPages(pageSizeHint: 1))
+            {
                     foreach (BlobChangeFeedEvent changeFeedEvent in page.Values)
                     {
-                        log.LogInformation($"event: {changeFeedEvent.EventType} at {changeFeedEvent.Subject.Replace("/blobServices/default", "")} on {changeFeedEvent.EventTime}");
+                        if (containerCheck.Invoke(changeFeedEvent))
+                        {
+                            log.LogInformation($"event: {changeFeedEvent.EventType} at {changeFeedEvent.Subject.Replace("/blobServices/default","")} on {changeFeedEvent.EventTime}");
+                        }                    
                     }
                     continuationToken = page.ContinuationToken;
-                    break;
-                }
-            }
-            
-            //Loop through the events in Changefeed with the continuationToken
-            await foreach (Page<BlobChangeFeedEvent> page in changeFeedClient.GetChangesAsync(continuationToken: continuationToken).AsPages(pageSizeHint: 1))
-            {
-                foreach (BlobChangeFeedEvent changeFeedEvent in page.Values)
-                {
-                    if (containerCheck.Invoke(changeFeedEvent))
-                    {
-                        log.LogInformation($"event: {changeFeedEvent.EventType} at {changeFeedEvent.Subject.Replace("/blobServices/default","")} on {changeFeedEvent.EventTime}");
-                    }                    
-                }
-                continuationToken = page.ContinuationToken;
             }
 
             //Upload new continuationToken to blob
