@@ -12,33 +12,46 @@ using System.Linq;
 namespace ChangeFeedSample
 {
     public static class ChangefeedSample
-    {
-        //Example predicate to filter events from Changefeed
-        static string containerName = "test-changefeed-container";
-        static Predicate<BlobChangeFeedEvent> containerCheck = (BlobChangeFeedEvent changeFeedEvent) => { return changeFeedEvent.Subject.Contains("/containers/" + containerName + "/"); };
+    {   
+        // Storage account connection string
+        static string connectionString = "CONNECTION_STRING";
 
-        /* This program outputs events from a storage account's changefeed, which may be filtered. 
+        // Example predicate to filter events from Changefeed
+        static string containerName = "test-changefeed-container";
+        static string eventType = "BlobCreated";
+        static Predicate<BlobChangeFeedEvent> containerCheck = (BlobChangeFeedEvent changeFeedEvent) => { return changeFeedEvent.Subject.Contains("/containers/" + containerName + "/"); };
+        static Predicate<BlobChangeFeedEvent> eventTypeCheck = (BlobChangeFeedEvent changeFeedEvent) => { return changeFeedEvent.EventType == eventType; };
+
+
+        /* 
+         * This program outputs events from a storage account's changefeed, which may be filtered. 
          * The program iterates through the changefeed using a cursor, which will be saved in a container of the specified storage account. 
          * Before starting the program, delete the cursor from previous runs from the storage account, if it exists
+         * To run without filtering, remove if statement in Run() and GetCursor()
          */
         [FunctionName("ChangeFeedSample")]
         public static void Run([TimerTrigger("0 */30 * * * *")]TimerInfo myTimer, ILogger log)
-        {
-            string connectionString = "CONNECTION_STRING";          
-                        
+        {           
             BlobServiceClient blobServiceClient = new BlobServiceClient(connectionString);
             BlobChangeFeedClient changeFeedClient = blobServiceClient.GetChangeFeedClient();
-            BlobContainerClient containerClient = blobServiceClient.GetBlobContainerClient("storingcursorcontainer");
-            BlobClient blobClient = new BlobClient(connectionString, "cursorcontainer","storingcursorblob");                      
+            try
+            {
+                BlobContainerClient containerClient = blobServiceClient.CreateBlobContainer("cursorstoragecontainer");
+            }
+            catch
+            {
+                BlobContainerClient containerClient = blobServiceClient.GetBlobContainerClient("cursorstoragecontainer");
+            }
+            BlobClient blobClient = new BlobClient(connectionString, "cursorstoragecontainer","cursorBlob");                      
                       
             string continuationToken = GetCursor(blobClient,changeFeedClient,log);                            
 
-            //Loop through the events in Changefeed with the continuationToken
+            // Loop through the events in Changefeed with the continuationToken
             foreach (Page<BlobChangeFeedEvent> page in changeFeedClient.GetChanges(continuationToken: continuationToken).AsPages())
             {
                     foreach (BlobChangeFeedEvent changeFeedEvent in page.Values)
                     {
-                        if (containerCheck.Invoke(changeFeedEvent))
+                        if (containerCheck.Invoke(changeFeedEvent) && eventTypeCheck.Invoke(changeFeedEvent))
                         {
                             log.LogInformation($"event: {changeFeedEvent.EventType} at {changeFeedEvent.Subject.Replace("/blobServices/default","")} on {changeFeedEvent.EventTime}");
                         }                    
@@ -46,7 +59,7 @@ namespace ChangeFeedSample
                     continuationToken = page.ContinuationToken;
             }
 
-            //Upload new continuationToken to blob
+            // Upload new continuationToken to blob
             var upStream = new MemoryStream(Encoding.ASCII.GetBytes(continuationToken));
             blobClient.Upload(upStream, true);
         }
@@ -57,17 +70,17 @@ namespace ChangeFeedSample
 
             if (blobClient.Exists())
             {
-                //If the continuationToken exists in blob, download and use it
+                // If the continuationToken exists in blob, download and use it
                 var stream = new MemoryStream();
                 blobClient.DownloadTo(stream);
                 continuationToken = Encoding.UTF8.GetString(stream.ToArray());
             }
             else
             {
-                //If the continuationToken does not exist in the blob, get the continuationToken from the first item
+                // If the continuationToken does not exist in the blob, get the continuationToken from the first item
                 Page<BlobChangeFeedEvent> page = changeFeedClient.GetChanges().AsPages(pageSizeHint: 1).First<Page<BlobChangeFeedEvent>>();
                 BlobChangeFeedEvent changeFeedEvent = page.Values.First<BlobChangeFeedEvent>();
-                if (containerCheck.Invoke(changeFeedEvent))
+                if (containerCheck.Invoke(changeFeedEvent) && eventTypeCheck.Invoke(changeFeedEvent))
                 {
                     log.LogInformation($"event: {changeFeedEvent.EventType} at {changeFeedEvent.Subject.Replace("/blobServices/default", "")} on {changeFeedEvent.EventTime}");
                 }                              

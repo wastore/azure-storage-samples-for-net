@@ -8,12 +8,14 @@ using System.Threading;
 namespace ExampleEventCreator
 {
     class ExampleEventCreator
-    {
+    {   
         static int count;
+        // Storage account connection string
         static string connectionString = ConfigurationManager.AppSettings["connectionString"];
+        // Name of created container
         static string containerName = "test-changefeed-container";
 
-        //Creates container and blobs within a storage account to populate changefeed and add example events
+        // Creates container and blobs within a storage account to populate changefeed and add example events
         static void Main(string[] args)
         {
             count = 0;
