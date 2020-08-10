@@ -19,32 +19,36 @@ namespace ExampleEventCreator
         static void Main(string[] args)
         {
             count = 0;
-            
+            // Create clients
             BlobServiceClient blobServiceClient = new BlobServiceClient(connectionString);
             BlobContainerClient blobContainerClient = blobServiceClient.CreateBlobContainer(containerName);
 
+            // Create Timer
             Timer timer = null;
             Console.WriteLine("Press Space to start the timer. Press Enter to stop the timer.");
-            while (true)
+            if(Console.ReadKey().Key == ConsoleKey.Spacebar)
             {
-                if(Console.ReadKey().Key == ConsoleKey.Spacebar)
-                {
-                    Console.WriteLine("Starting timer...");
-                    timer = new Timer(new TimerCallback(CreateEvents), null, 0, 1800000);
-                }
-                else if(Console.ReadKey().Key == ConsoleKey.Enter)
-                {
-                    Console.WriteLine("Stopping timer...");
-                    timer.Change(
-                        Timeout.Infinite,
-                        Timeout.Infinite);
-                    break;
-                }            
-            }
+                Console.WriteLine("Starting timer...");
+                // Timer calls CreateEvents function every 30 minutes
+                timer = new Timer(new TimerCallback(CreateEvents), null, 0, 1800000);
 
-                     
+                while (Console.ReadKey().Key != ConsoleKey.Enter)
+                {
+                    if (Console.ReadKey().Key == ConsoleKey.Enter)
+                    {
+                        Console.WriteLine("Stopping timer...");
+                        timer.Change(
+                            Timeout.Infinite,
+                            Timeout.Infinite);
+                        break;
+                    }
+                }
+
+                Console.WriteLine("Timer Stopped");
+            }                             
         }
 
+        // Creates and uploads 3 blobs to populate Changefeed
         static void CreateEvents(Object stateinfo)
         {
             for (int i = 0; i < 3; i++)
