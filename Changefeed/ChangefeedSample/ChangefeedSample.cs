@@ -25,7 +25,6 @@ namespace ChangeFeedSample
         static Predicate<BlobChangeFeedEvent> blobCheck = (BlobChangeFeedEvent changeFeedEvent) => { return changeFeedEvent.Subject.Contains("/blobs/" + blobName); };
         static Predicate<BlobChangeFeedEvent> eventTypeCheck = (BlobChangeFeedEvent changeFeedEvent) => { return changeFeedEvent.EventType == eventType; };
 
-
         /* 
          * This program outputs events from a storage account's changefeed, which may be filtered. 
          * The program iterates through the changefeed using a cursor, which will be saved in a container of the specified storage account. 

@@ -31,7 +31,6 @@ namespace ExampleEventCreator
                 Console.WriteLine("Starting timer...");
                 // Timer calls CreateEvents function every 30 minutes
                 timer = new Timer(new TimerCallback(CreateEvents), null, 0, 1800000);
-
                 while (Console.ReadKey().Key != ConsoleKey.Enter)
                 {
                     if (Console.ReadKey().Key == ConsoleKey.Enter)
@@ -43,7 +42,6 @@ namespace ExampleEventCreator
                         break;
                     }
                 }
-
                 Console.WriteLine("Timer Stopped");
             }                             
         }
@@ -58,7 +56,6 @@ namespace ExampleEventCreator
                 blobClient.Upload(upStream, true);
                 count++;
             }
-
             Console.WriteLine("Created example events");
         }
     }
