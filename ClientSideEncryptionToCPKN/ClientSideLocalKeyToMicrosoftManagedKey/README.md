@@ -2,7 +2,7 @@
 Migration Sample From Local Key Client Side Encryption to Microsoft Managed Key Server Side Encryption
 
 ## General Info
-This sample contains two programs: ExampleSetup and Migration. Migration is an optional setup process that uploads an example client side encrypted blob (blobExample.txt in samplesetup folder) to a newly created container in the provided storage account.
+This sample contains two programs: ExampleDataCreator and Migration. Migration is an optional setup process that uploads an example client side encrypted blob (blobExample.txt in samplesetup folder) to a newly created container in the provided storage account.
 Migration then migrates the blob to server side encryption using a Microsoft managed key from Azure Key Vault and uploads the server side encrypted blob in the same container. 
 
 ## Prerequisites
@@ -14,7 +14,7 @@ Requires an [Azure subscription](https://azure.microsoft.com/en-us/free/) and an
 #### Requires users to enter the implementation of IKeyEncryptionKey interface used for client side encryption. 
 This sample contains a SampleKeyEncryptionKey for the example, but users must include their implentation to migrate their data. Do not use SampleKeyEncryptionKey for user data.
 
-### ExampleSetup
+### ExampleDataCreator
 #### Requires users to enter the following into the App.config file:
 * Subscription ID - subscriptionId
 * Resource Group Name - resourceGroup
@@ -40,17 +40,17 @@ This sample contains a SampleKeyEncryptionKey for the example, but users must in
 * Encryption Scope Name - encryptionScopeName
 
 ## How To Use
-### With ExampleSetup
-1. Navigate to ExampleSetup folder
+### With ExampleDataCreator
+1. Navigate to ExampleDataCreator folder
 2. Enter values to App.config file
 3. Run 'dotnet build'
 4. Run 'dotnet run'
 5. Navigate to Migration folder
-6. Enter values to App.config file (Must match values entered into ExampleSetup's App.config file)
+6. Enter values to App.config file (Must match values entered into ExampleDataCreator's App.config file)
 7. Run 'dotnet build'
 8. Run 'dotnet run'
 
-### Without ExampleSetup
+### Without ExampleDataCreator
 1. Navigate to Migration folder
 2. Replace implementation of IKeyEncryptionKey interface in SampleKeyEncryptionKey.cs
 3. Enter values to App.config folder

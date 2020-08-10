@@ -10,7 +10,7 @@ using System.Diagnostics;
 
 namespace ExampleSetup
 {
-    class Setup
+    class ExampleDataCreator
     {
         /*Creates example container, client side encrypted blob, Key Vault key, and encryption scope for sample
          * 
