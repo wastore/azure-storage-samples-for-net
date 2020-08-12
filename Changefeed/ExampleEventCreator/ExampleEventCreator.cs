@@ -21,15 +21,22 @@ namespace ExampleEventCreator
             count = 0;
             // Create clients
             BlobServiceClient blobServiceClient = new BlobServiceClient(connectionString);
-            BlobContainerClient blobContainerClient = blobServiceClient.CreateBlobContainer(containerName);
-
+            try
+            {
+                BlobContainerClient blobContainerClient = blobServiceClient.CreateBlobContainer(containerName);
+            }
+            catch
+            {
+                BlobContainerClient blobContainerClient = blobServiceClient.GetBlobContainerClient(containerName);
+            }
+            
             // Create Timer
             Timer timer = null;
-            Console.WriteLine("Press Space to start the timer. Press Enter to stop the timer.");
+            Console.WriteLine("Press Space to start the timer. Press Enter to stop the timer. Press any other key to exit/not run the timer");
             if(Console.ReadKey().Key == ConsoleKey.Spacebar)
             {
                 Console.WriteLine("Starting timer...");
-                // Timer calls CreateEvents function every 30 minutes
+                // Timer calls CreateEvents function every 30 minutes, to edit the interval change the last value in the call to the number of milliseconds
                 timer = new Timer(new TimerCallback(CreateEvents), null, 0, 1800000);
                 while (Console.ReadKey().Key != ConsoleKey.Enter)
                 {
@@ -43,7 +50,11 @@ namespace ExampleEventCreator
                     }
                 }
                 Console.WriteLine("Timer Stopped");
-            }                             
+            }
+            else
+            {
+                Console.WriteLine("\nTimer was not run, program exited");
+            }
         }
 
         // Creates and uploads 3 blobs to populate Changefeed
