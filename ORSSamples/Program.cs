@@ -58,7 +58,7 @@ namespace ORS
                 blobNames.Add(newBlobName);
             }
 
-            // Check if replication in dest container is finished in interval of 5 min
+            // Check if replication in dest container is finished in interval of 1 min
             Console.WriteLine("Checking to see if replication finished");
             while (blobNames.Count > 0)
             {
@@ -79,7 +79,8 @@ namespace ORS
         }
 
         /*
-         * Checks replication status of given blob in given container
+         * Checks replication status of given blob in given container. Returns true if replication is completed or failed. If it failed, 
+         * there is an additional output that notifies user. Returns false if there is no status yet
          */
         public static bool checkReplicationStatus(BlobContainerClient sourceContainerClient, String blobName)
         {
@@ -118,13 +119,11 @@ namespace ORS
             sourceBlob.Upload(stream, true);
             Console.WriteLine("Added blob " + blobName + " containing content: " + blobContent);
             
-            // Check if replication in dest container is finished in interval of 5 min
+            // Check if replication in dest container is finished in interval of 1 min
             Console.WriteLine("Checking to see if replication finished");
-            bool replicationSuccess = false;
-            bool replicationStatusFlag = true;
-            while (replicationStatusFlag)
+            while (true)
             {
-                Thread.Sleep(300000);
+                Thread.Sleep(60000);
                 Response<BlobProperties> source_response = sourceBlob.GetProperties();
                 IList<ObjectReplicationPolicy> policyList = source_response.Value.ObjectReplicationSourceProperties;
 
@@ -153,7 +152,7 @@ namespace ORS
                             destBlob.DownloadTo(destStream);
                             String destContent = Encoding.UTF8.GetString(destStream.ToArray());
                             Console.WriteLine("Destination Blob Content: " + destContent);
-                            replicationStatusFlag = false;
+                            return;  
                         }
                     }
                 }
