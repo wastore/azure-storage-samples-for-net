@@ -29,7 +29,7 @@ namespace ORS
 
             // Setting up individual clients for source and destination storage accounts
             BlobServiceClient destServiceClient = new BlobServiceClient(destConnectionString);
-            BlobContainerClient sourceContainerClient = new BlobContainerClient(sourceConnectionString, sourceContainerName);
+            //BlobContainerClient sourceContainerClient = new BlobContainerClient(sourceConnectionString, sourceContainerName);
             BlobContainerClient destContainerClient = new BlobContainerClient(destConnectionString, destContainerName);
 
             // Demonstrates ORS features. Archiving using batch currently does not work. 
@@ -164,8 +164,7 @@ namespace ORS
         {
             foreach (BlobItem blob in containerClient.GetBlobs())
             {
-                Process process = Process.Start("CMD.exe", "/C az storage blob set-tier --connection-string " + connectionString + " --container-name " + containerName + " --name \"" + blob.Name +"\" --tier Archive");
-                process.WaitForExit();
+                containerClient.GetBlobClient(blob.Name).SetAccessTier(AccessTier.Archive);
             }
         }
 
