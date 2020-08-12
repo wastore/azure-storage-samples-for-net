@@ -29,7 +29,7 @@ namespace ORS
 
             // Setting up individual clients for source and destination storage accounts
             BlobServiceClient destServiceClient = new BlobServiceClient(destConnectionString);
-            //BlobContainerClient sourceContainerClient = new BlobContainerClient(sourceConnectionString, sourceContainerName);
+            BlobContainerClient sourceContainerClient = new BlobContainerClient(sourceConnectionString, sourceContainerName);
             BlobContainerClient destContainerClient = new BlobContainerClient(destConnectionString, destContainerName);
 
             // Demonstrates ORS features. Archiving using batch currently does not work. 
