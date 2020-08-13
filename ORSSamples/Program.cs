@@ -88,7 +88,7 @@ namespace ORS
                     }
                 }
                 blobNames = repIncomplete;
-                Console.WriteLine("Percentage completed: " + ((numberBlobs - blobNames.Count) / numberBlobs * 100 + "%"));
+                Console.WriteLine("Percentage completed: " + ((double)(numberBlobs - blobNames.Count) * 100 / (double)numberBlobs  + "%"));
                 Console.WriteLine((numberBlobs - blobNames.Count) + " out of " + numberBlobs + " blobs have completed");
             }
         }
