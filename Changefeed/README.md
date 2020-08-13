@@ -1,7 +1,7 @@
 # Changefeed Sample
 This sample shows how users can log the events in a storage account using Changefeed. The program iterates on a scheduled interval through the changefeed and filters and logs events using a predicate. These filters may be changed in the ChangefeedSample.cs file. The ChangefeedSample program is an Azure Function that can be deployed on Azure, but it can also be run locally with emulation.
 The ExampleEventCreator program is an optional program that creates a container and example blobs to create events that populate the Changefeed on a scheduled interval.  By default, both functions run every 30 minutes.
-To change the interval of ChangeFeedSample, edit the CRON string in the Run function. To change the interval of ExampleEventCreator, edit the 
+To change the interval of ChangeFeedSample, edit the CRON string in the Run function. To change the interval of ExampleEventCreator, edit the number of milliseconds in the Timer object.
 
 ## Prerequisites
 Requires installation of [.NET Core](https://dotnet.microsoft.com/download/dotnet-core),
