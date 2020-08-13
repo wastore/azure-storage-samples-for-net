@@ -17,33 +17,48 @@ namespace ORS
     {
         static void Main(string[] args)
         {
-            // Getting variables from config file
-            String sourceConnectionString = ConfigurationManager.AppSettings["sourceConnectionString"];
-            String destConnectionString = ConfigurationManager.AppSettings["destConnectionString"];
-            String sourceContainerName = ConfigurationManager.AppSettings["sourceContainerName"];
-            String destContainerName = ConfigurationManager.AppSettings["destContainerName"];
-            String blobName = ConfigurationManager.AppSettings["blobName"];
-            String blobContent1 = "Hello World!";
-            String blobContent2 = "Lorem ipsum";
-            int numberBlobs = 1000;
-
             // Setting up individual clients for source and destination storage accounts
-            BlobServiceClient destServiceClient = new BlobServiceClient(destConnectionString);
-            BlobContainerClient sourceContainerClient = new BlobContainerClient(sourceConnectionString, sourceContainerName);
-            BlobContainerClient destContainerClient = new BlobContainerClient(destConnectionString, destContainerName);
+            BlobServiceClient destServiceClient = new BlobServiceClient(Constants.destConnectionString);
+            BlobContainerClient sourceContainerClient = new BlobContainerClient(Constants.sourceConnectionString, Constants.sourceContainerName);
+            BlobContainerClient destContainerClient = new BlobContainerClient(Constants.destConnectionString, Constants.destContainerName);
 
-            // Demonstrates ORS features. Archiving using batch currently does not work. 
-            // multipleBlobUpdater(sourceContainerClient, destContainerClient, blobName, blobContent1, numberBlobs);
-            blobUpdater(sourceContainerClient, destContainerClient, blobName, blobContent1);
-            blobUpdater(sourceContainerClient, destContainerClient, blobName, blobContent2);          
-            archiveContainerFiles(destContainerClient, destConnectionString, destContainerName);
-            // archiveContainerFilesUsingBatch(destServiceClient, destContainerClient);
+            // Demonstrates ORS features. Archiving and deleting using batch currently does not work. 
+            MultipleBlobUpdater(
+                sourceContainerClient,
+                Constants.blobName, 
+                Constants.blobContent1,
+                Constants.numberBlobs,
+                Constants.timeInterval);
+            BlobUpdater(
+                sourceContainerClient, 
+                destContainerClient,
+                Constants.blobName,
+                Constants.blobContent1,
+                Constants.timeInterval);
+            BlobUpdater(
+                sourceContainerClient, 
+                destContainerClient,
+                Constants.blobName,
+                Constants.blobContent2,
+                Constants.timeInterval);          
+            ArchiveContainerFiles(destContainerClient);
+            ArchiveContainerFilesUsingBatch(
+                destServiceClient, 
+                destContainerClient);
+            DeleteAllBlobsUsingBatch(
+                destServiceClient,
+                destContainerClient);
         }
 
         /*
          * Uploads 1000 blobs, then checks status of replication in interval of 1 min. Outputs status as a percentage of blobs completed replication
          */
-        public static void multipleBlobUpdater(BlobContainerClient sourceContainerClient, BlobContainerClient destContainerClient, String blobName, String blobContent, int numberBlobs)
+        public static void MultipleBlobUpdater(
+            BlobContainerClient sourceContainerClient,
+            String blobName, 
+            String blobContent, 
+            int numberBlobs,
+            int timeInterval)
         {
             // Uploading blobs
             Console.WriteLine("Demonstrating tracking percentage of blobs completed");
@@ -62,11 +77,11 @@ namespace ORS
             Console.WriteLine("Checking to see if replication finished");
             while (blobNames.Count > 0)
             {
-                Thread.Sleep(60000);
+                Thread.Sleep(timeInterval);
                 List<string> repIncomplete = new List<string>();
                 foreach (String currBlobName in blobNames)
                 {
-                    bool status = checkReplicationStatus(sourceContainerClient, currBlobName);
+                    bool status = CheckReplicationStatus(sourceContainerClient, currBlobName);
                     if (!status)
                     {
                         repIncomplete.Add(currBlobName);
@@ -82,7 +97,9 @@ namespace ORS
          * Checks replication status of given blob in given container. Returns true if replication is completed or failed. If it failed, 
          * there is an additional output that notifies user. Returns false if there is no status yet
          */
-        public static bool checkReplicationStatus(BlobContainerClient sourceContainerClient, String blobName)
+        public static bool CheckReplicationStatus(
+            BlobContainerClient sourceContainerClient, 
+            String blobName)
         {
             BlobClient sourceBlob = sourceContainerClient.GetBlobClient(blobName);
             Response<BlobProperties> source_response = sourceBlob.GetProperties();
@@ -110,7 +127,11 @@ namespace ORS
          * Uploads a single blob (or updates it in the case where blob already exists in container), checks replication completion, 
          * then demonstrates that source and destination blobs have identical contents
          */
-        public static void blobUpdater(BlobContainerClient sourceContainerClient, BlobContainerClient destContainerClient, String blobName, String blobContent)
+        public static void BlobUpdater(BlobContainerClient sourceContainerClient, 
+            BlobContainerClient destContainerClient, 
+            String blobName, 
+            String blobContent,
+            int timeInterval)
         {
             // Uploading blobs
             Console.WriteLine("Demonstrating replication of blob in source has same contents in destination container");
@@ -123,7 +144,7 @@ namespace ORS
             Console.WriteLine("Checking to see if replication finished");
             while (true)
             {
-                Thread.Sleep(60000);
+                Thread.Sleep(timeInterval);
                 Response<BlobProperties> source_response = sourceBlob.GetProperties();
                 IList<ObjectReplicationPolicy> policyList = source_response.Value.ObjectReplicationSourceProperties;
 
@@ -137,20 +158,25 @@ namespace ORS
                             if (rule.ReplicationStatus.ToString() != "Complete")
                             {
                                 Console.WriteLine("Blob replication failed");
-                                // Environment.Exit(1);
                                 return;
                             }
                             // Comparing source and dest blobs
                             Console.WriteLine("Blob successfully replicated");
-                            MemoryStream sourceStream = new MemoryStream();
-                            sourceBlob.DownloadTo(sourceStream);
-                            String sourceContent = Encoding.UTF8.GetString(sourceStream.ToArray());
+                            String sourceContent = "";
+                            String destContent = "";
+                            using (MemoryStream sourceStream = new MemoryStream())
+                            {
+                                sourceBlob.DownloadTo(sourceStream);
+                                sourceContent = Encoding.UTF8.GetString(sourceStream.ToArray());
+                            }
                             Console.WriteLine("Source Blob Content: " + sourceContent);
 
-                            MemoryStream destStream = new MemoryStream();
-                            BlobClient destBlob = destContainerClient.GetBlobClient(blobName);
-                            destBlob.DownloadTo(destStream);
-                            String destContent = Encoding.UTF8.GetString(destStream.ToArray());
+                            using (MemoryStream destStream = new MemoryStream())
+                            {
+                                BlobClient destBlob = destContainerClient.GetBlobClient(blobName);
+                                destBlob.DownloadTo(destStream);
+                                destContent = Encoding.UTF8.GetString(destStream.ToArray());
+                            }
                             Console.WriteLine("Destination Blob Content: " + destContent);
                             return;  
                         }
@@ -160,7 +186,8 @@ namespace ORS
         }
 
         // Iterates through all blobs in destination container and changes access tier to archive
-        public static void archiveContainerFiles(BlobContainerClient containerClient, String connectionString, String containerName)
+        public static void ArchiveContainerFiles(
+            BlobContainerClient containerClient)
         {
             foreach (BlobItem blob in containerClient.GetBlobs())
             {
@@ -169,7 +196,9 @@ namespace ORS
         }
 
         // Changes all blobs in destination container to archive access tier using blob batch
-        public static void archiveContainerFilesUsingBatch(BlobServiceClient serviceClient, BlobContainerClient containerClient)
+        public static void ArchiveContainerFilesUsingBatch(
+            BlobServiceClient serviceClient, 
+            BlobContainerClient containerClient)
         {
             // Getting list of blob uris
             Pageable<BlobItem> allBlobs = containerClient.GetBlobs();
@@ -185,6 +214,29 @@ namespace ORS
             // Creating batch client then setting access tier for all blobs
             BlobBatchClient batchClient = serviceClient.GetBlobBatchClient();
             batchClient.SetBlobsAccessTier(blobList, AccessTier.Archive);
+        }
+
+        /*
+         * Deletes all blobs in container
+         */
+        public static void DeleteAllBlobsUsingBatch(
+            BlobServiceClient serviceClient,
+            BlobContainerClient containerClient)
+        {
+            // Getting list of blob uris
+            Pageable<BlobItem> allBlobs = containerClient.GetBlobs();
+            Uri[] blobList = new Uri[allBlobs.Count()];
+            int count = 0;
+            foreach (BlobItem blob in allBlobs)
+            {
+                BlobClient blobClient = containerClient.GetBlobClient(blob.Name);
+                blobList[count] = blobClient.Uri;
+                count++;
+            }
+
+            // Creating batch client then setting access tier for all blobs
+            BlobBatchClient batchClient = serviceClient.GetBlobBatchClient();
+            batchClient.DeleteBlobs(blobList);
         }
     }
 }

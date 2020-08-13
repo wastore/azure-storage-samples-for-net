@@ -2,15 +2,15 @@
 This sample will demonstrate ORS working for two linked service account containers, one that acts as the source container and one that
 acts as the destination container. There are multiple features implemented in this sample. 
 
-First, we have multipleBlobUpdater where 1000 blobs are uploaded to the source container. Then, the replication status of all the blobs
+First, we have MultipleBlobUpdater where 1000 blobs are uploaded to the source container. Then, the replication status of all the blobs
 are tracked, and for every minute until completion, the percentage of blobs that have completed replication is outputted. 
 
-Another function called blobUpdater will create a blob called blobExample.txt that will be uploaded to the source account's container, and 
+Another function called BlobUpdater will create a blob called blobExample.txt that will be uploaded to the source account's container, and 
 once replication is complete, the source blob and destination blob's contents will be printed to demonstrate that 
 they are identical. Then, the same blob will be updated with new contents and then compared after replication completes.
 
-Finally, we have archiveContainerFiles that changes the access tier of all blobs in the destination container to archive. archiveContainerFilesUsingBatch
-does the same thing but instead uses blob batch.
+We also have ArchiveContainerFiles that changes the access tier of all blobs in the destination container to archive. ArchiveContainerFilesUsingBatch
+does the same thing but instead uses blob batch. DeleteAllBlobsUsingBatch will delete all of the files in the destination container.
 
 #### Setup
 Requires installation of [.NET Core](https://dotnet.microsoft.com/download/dotnet-core),
