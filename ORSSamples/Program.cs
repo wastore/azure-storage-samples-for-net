@@ -1,14 +1,12 @@
 ﻿using System;
 using Azure;
 using Azure.Storage.Blobs;
-using System.Configuration;
 using System.IO;
 using System.Text;
 using System.Threading;
 using Azure.Storage.Blobs.Models;
 using System.Collections.Generic;
 using System.Linq;
-using System.Diagnostics;
 using Azure.Storage.Blobs.Specialized;
 
 namespace ORS
@@ -18,29 +16,29 @@ namespace ORS
         static void Main(string[] args)
         {
             // Setting up individual clients for source and destination storage accounts
-            BlobServiceClient destServiceClient = new BlobServiceClient(Constants.destConnectionString);
-            BlobContainerClient sourceContainerClient = new BlobContainerClient(Constants.sourceConnectionString, Constants.sourceContainerName);
-            BlobContainerClient destContainerClient = new BlobContainerClient(Constants.destConnectionString, Constants.destContainerName);
+            BlobServiceClient destServiceClient = new BlobServiceClient(Constants.DestConnectionString);
+            BlobContainerClient sourceContainerClient = new BlobContainerClient(Constants.SourceConnectionString, Constants.SourceContainerName);
+            BlobContainerClient destContainerClient = new BlobContainerClient(Constants.DestConnectionString, Constants.DestContainerName);
 
             // Demonstrates ORS features. Archiving and deleting using batch currently does not work. 
-            MultipleBlobUpdater(
+            MultipleBlobUpdate(
                 sourceContainerClient,
-                Constants.blobName, 
-                Constants.blobContent1,
-                Constants.numberBlobs,
-                Constants.timeInterval);
-            BlobUpdater(
+                Constants.BlobName, 
+                Constants.BlobContent1,
+                Constants.NumberBlobs,
+                Constants.TimeInterval);
+            BlobUpdate(
                 sourceContainerClient, 
                 destContainerClient,
-                Constants.blobName,
-                Constants.blobContent1,
-                Constants.timeInterval);
-            BlobUpdater(
+                Constants.BlobName,
+                Constants.BlobContent1,
+                Constants.TimeInterval);
+            BlobUpdate(
                 sourceContainerClient, 
                 destContainerClient,
-                Constants.blobName,
-                Constants.blobContent2,
-                Constants.timeInterval);          
+                Constants.BlobName,
+                Constants.BlobContent2,
+                Constants.TimeInterval);          
             ArchiveContainerFiles(destContainerClient);
             ArchiveContainerFilesUsingBatch(
                 destServiceClient, 
@@ -53,7 +51,7 @@ namespace ORS
         /*
          * Uploads 1000 blobs, then checks status of replication in interval of 1 min. Outputs status as a percentage of blobs completed replication
          */
-        public static void MultipleBlobUpdater(
+        public static void MultipleBlobUpdate(
             BlobContainerClient sourceContainerClient,
             String blobName, 
             String blobContent, 
@@ -127,7 +125,7 @@ namespace ORS
          * Uploads a single blob (or updates it in the case where blob already exists in container), checks replication completion, 
          * then demonstrates that source and destination blobs have identical contents
          */
-        public static void BlobUpdater(BlobContainerClient sourceContainerClient, 
+        public static void BlobUpdate(BlobContainerClient sourceContainerClient, 
             BlobContainerClient destContainerClient, 
             String blobName, 
             String blobContent,
