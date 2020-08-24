@@ -7,7 +7,7 @@ To change the interval of ChangeFeedSample, edit the CRON string in the Run func
 Requires installation of [.NET Core](https://dotnet.microsoft.com/download/dotnet-core),
 [Visual Studio 2019](https://visualstudio.microsoft.com/downloads/) with the Azure development workload also installed,
 an [Azure subscription](https://azure.microsoft.com/en-us/free/), 
-an [Azure storage account](https://docs.microsoft.com/en-us/azure/storage/common/storage-account-create?tabs=azure-portal), 
+an [Azure storage account](https://docs.microsoft.com/en-us/azure/storage/common/storage-account-create?tabs=azure-portal) with [Changefeed enabled](https://docs.microsoft.com/en-us/azure/storage/blobs/storage-blob-change-feed?tabs=azure-portal#enable-and-disable-the-change-feed), 
 and an [Azure Function](https://docs.microsoft.com/en-us/azure/azure-functions/functions-create-scheduled-function#:~:text=Create%20a%20timer%20triggered%20function%201%20Expand%20your,by%20viewing%20trace%20information%20written%20to%20the%20logs.).
 
 ## Code Setup
