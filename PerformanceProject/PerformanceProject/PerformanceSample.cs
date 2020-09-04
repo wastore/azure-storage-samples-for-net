@@ -18,7 +18,7 @@ namespace PerformanceProject
                 "get the upload time of the control upload where max concurrency is 1 and initial transfer size as well as max transfer size are 1*1024*1024.\n" +
                 "The program will then test the upload time again while changing only one of these variables and keeping the other two constant in order to see\n" +
                 "trends in upload time from each variable. Max concurrency will be tested from 2 to 20 at increments of 1, and initial and max transfer size will\n" +
-                "be tested from 16*1024*1024 to 56*1024*1024 at increments of 16*1024*1024. This data will be inputted to an excel sheet and made into a graph.\n" +
+                "be tested from 16*1024*1024 to 64*1024*1024 at increments of 16*1024*1024. This data will be inputted to an excel sheet and made into a graph.\n" +
                 "Lastly, the program will check all of the previously mentioned combinations at the same time, to see which is the fastest overall upload. All of\n" +
                 "the data found in this program will be saved to a file. This program will run 3 times to test the upload of 32MB, 64MB, and 128MB blobs.\n" +
                 "PLEASE NOTE: this program can take multiple hours to finish running and may need to run overnight.\n");
@@ -124,7 +124,7 @@ namespace PerformanceProject
             Console.WriteLine("\nTiming upload using different max concurrency values...");
 
             // Create a matrix to save data to
-            Object[,] concurrencyArray = new object[10, 2];
+            Object[,] concurrencyArray = new object[19, 2];
             concurrencyArray.SetValue("Max Concurrency", 0, 0);
             concurrencyArray.SetValue("Average Time", 0, 1);
 
@@ -226,13 +226,13 @@ namespace PerformanceProject
             Console.WriteLine("\nTiming upload using different initial transfer size values...");
 
             // Create a matrix to save data to
-            Object[,] initArray = new object[10, 2];
+            Object[,] initArray = new object[4, 2];
             initArray.SetValue("Initial Transfer Size", 0, 0);
             initArray.SetValue("Average Time", 0, 1);
 
             // Loop to test different maximum concurrency levels
             int location = 1;
-            for (int init = (16 * 1024 * 1024); init <= (56 * 1024 * 1024); init = init + (16 * 1024 * 1024))
+            for (int init = (16 * 1024 * 1024); init <= (64 * 1024 * 1024); init = init + (16 * 1024 * 1024))
             {
                 // Setting options for upload
                 var options = new StorageTransferOptions { MaximumConcurrency = 1, InitialTransferSize = init, MaximumTransferSize = (10 * 1024 * 1024) };
@@ -329,13 +329,13 @@ namespace PerformanceProject
             Console.WriteLine("\nTiming upload using different max transfer size values...");
 
             // Create a matrix to save data to
-            Object[,] maxTransferArray = new object[10, 2];
+            Object[,] maxTransferArray = new object[4, 2];
             maxTransferArray.SetValue("Max Transfer Size", 0, 0);
             maxTransferArray.SetValue("Average Time", 0, 1);
 
             // Loop to test different maximum concurrency levels
             int location = 1;
-            for (int maxTransfer = (16 * 1024 * 1024); maxTransfer <= (56 * 1024 * 1024); maxTransfer = maxTransfer + (16 * 1024 * 1024))
+            for (int maxTransfer = (16 * 1024 * 1024); maxTransfer <= (64 * 1024 * 1024); maxTransfer = maxTransfer + (16 * 1024 * 1024))
             {
                 // Setting options for upload
                 var options = new StorageTransferOptions { MaximumConcurrency = 1, InitialTransferSize = (10 * 1024 * 1024), MaximumTransferSize = maxTransfer };
@@ -441,10 +441,10 @@ namespace PerformanceProject
             int fastMaximumTransfer = (10 * 1024 * 1024);
 
             // Loop to test different initial trasnfer sizes
-            for (int initialTransfer = (16 * 1024 * 1024); initialTransfer <= (56 * 1024 * 1024); initialTransfer = initialTransfer + (16 * 1024 * 1024))
+            for (int initialTransfer = (16 * 1024 * 1024); initialTransfer <= (64 * 1024 * 1024); initialTransfer = initialTransfer + (16 * 1024 * 1024))
             {
                 // Loop to test different maximum transfer sizes
-                for (int maximumTransfer = (16 * 1024 * 1024); maximumTransfer <= (56 * 1024 * 1024); maximumTransfer = maximumTransfer + (16 * 1024 * 1024))
+                for (int maximumTransfer = (16 * 1024 * 1024); maximumTransfer <= (64 * 1024 * 1024); maximumTransfer = maximumTransfer + (16 * 1024 * 1024))
                 {
                     // Loop to test different maximum concurrency levels
                     for (int concurrency = 2; concurrency <= 20; concurrency++)
