@@ -8,11 +8,11 @@ using System.Threading.Tasks;
 
 namespace Azure.Storage.Blobs.EncryptionMigration
 {
-    internal class MicrosoftManagedKeyUploader : IEncryptionUploader<string>
+    internal class ManagedKeyUploader : IEncryptionUploader<string>
     {
         private readonly StorageTransferOptions _transferOptions;
 
-        public MicrosoftManagedKeyUploader(StorageTransferOptions? transferOptions = default)
+        public ManagedKeyUploader(StorageTransferOptions? transferOptions = default)
         {
             _transferOptions = transferOptions ?? new StorageTransferOptions
             {
@@ -32,7 +32,7 @@ namespace Azure.Storage.Blobs.EncryptionMigration
             string previousKeyWrapAlgorithm,
             string encryptionScope,
             IProgress<long> progressHandler,
-            CancellationToken cancellation)
+            CancellationToken cancellationToken)
         {
             await blob.WithEncryptionScope(encryptionScope).UploadAsync(
                 plaintext,

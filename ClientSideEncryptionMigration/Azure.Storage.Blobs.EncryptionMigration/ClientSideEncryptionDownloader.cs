@@ -29,20 +29,12 @@ namespace Azure.Storage.Blobs.EncryptionMigration
             };
         }
 
-        public async Task<(BlobProperties Properties, string KeyId, string KeyWrapAlgorithm)> DownloadV1ClientSideEncryptedBlobOrDefaultAsync(BlobClient blob, Stream plaintextDestination, IProgress<long> progressHandler, CancellationToken cancellationToken)
+        public async Task DownloadV1ClientSideEncryptedBlobToStreamAsync(
+            BlobClient blob,
+            Stream plaintextDestination,
+            IProgress<long> progressHandler,
+            CancellationToken cancellationToken)
         {
-            BlobProperties properties;
-            try
-            {
-                properties = await blob.GetPropertiesAsync(cancellationToken: cancellationToken).ConfigureAwait(false);
-            }
-            catch (RequestFailedException e) when (e.Status == 404) // blob does not exist
-            {
-                return default;
-            }
-
-            if (!IsClientSideEncryptedV1(properties, out string keyId, out string keyWrapAlgorithm)) return default;
-
             await blob.WithClientSideEncryptionOptions(_encryptionOptions).DownloadToAsync(
                 plaintextDestination,
                 new BlobDownloadToOptions
@@ -51,15 +43,16 @@ namespace Azure.Storage.Blobs.EncryptionMigration
                     ProgressHandler = progressHandler
                 },
                 cancellationToken);
-
-            return (properties, keyId, keyWrapAlgorithm);
         }
 
-        private bool IsClientSideEncryptedV1(BlobProperties properties, out string keyId, out string keyWrapAlgorithm)
+        public bool IsClientSideEncryptedV1(IDictionary<string, string> blobMetadata)
+            => IsClientSideEncryptedV1(blobMetadata, out string _, out string _);
+
+        public bool IsClientSideEncryptedV1(IDictionary<string, string> blobMetadata, out string keyId, out string keyWrapAlgorithm)
         {
             // if metadata key not present, clientside encryption not in use
             string encryptionMetadata;
-            if (!properties.Metadata.TryGetValue("encryptiondata", out encryptionMetadata))
+            if (!blobMetadata.TryGetValue("encryptiondata", out encryptionMetadata))
             {
                 keyId = null;
                 keyWrapAlgorithm = null;

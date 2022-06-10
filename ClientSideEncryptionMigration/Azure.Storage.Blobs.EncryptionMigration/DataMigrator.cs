@@ -22,43 +22,70 @@ namespace Azure.Storage.Blobs.EncryptionMigration
         /// <summary>
         /// Attempts to migrate a blob off client-side encryption v1, if it's already encrypted that way.
         /// </summary>
-        /// <param name="blob">Blob to migrate if encrypted.</param>
-        /// <param name="args">Arguments for upload, specific to the chosen new encryption solution.</param>
-        /// <param name="progressHandler">Progress handler for blob transfer.</param>
-        /// <param name="cancellationToken">Cancellation token.</param>
-        /// <returns>True if the blob was migrated. False if the blob does not exist or is not client-side encrypted.</returns>
-        public async Task<bool> MigrateBlobIfClientsideV1Encrypted(BlobClient blob, TUploadArgs args, IProgress<(BlobMigrationState State, long BytesTransfered)> progressHandler, CancellationToken cancellationToken)
+        /// <param name="blob">
+        /// Blob to migrate if encrypted.
+        /// Client should not be preconfigured with any encryption options.
+        /// </param>
+        /// <param name="args">
+        /// Arguments for upload, specific to the chosen new encryption solution.
+        /// </param>
+        /// <param name="progressHandler">
+        /// Progress handler for blob transfer.
+        /// </param>
+        /// <param name="cancellationToken">
+        /// Cancellation token.
+        /// </param>
+        /// <returns>
+        /// True if the blob was migrated. False otherwise.
+        /// </returns>
+        public async Task<bool> TryMigrateClientSideEncryptedV1Blob(
+            BlobClient blob,
+            TUploadArgs args,
+            IProgress<(BlobMigrationState State, long BytesTransfered)> progressHandler,
+            CancellationToken cancellationToken)
         {
+            BlobProperties properties = await blob.GetPropertiesAsync();
+
+            string keyId, keyWrapAlgorithm;
+            if (!_downloader.IsClientSideEncryptedV1(properties.Metadata, out keyId, out keyWrapAlgorithm))
+            {
+                return false;
+            }
+
+            // downloading to memory for sample purposes
             var plaintextHolder = new MemoryStream();
-            (BlobProperties Properties, string KeyId, string KeyWrapAlgorithm) blobToMigrate = await _downloader.DownloadV1ClientSideEncryptedBlobOrDefaultAsync(
+            await _downloader.DownloadV1ClientSideEncryptedBlobToStreamAsync(
                 blob,
                 plaintextHolder,
                 new Progress<long>(bytesDownloaded => progressHandler?.Report((BlobMigrationState.Downloading, bytesDownloaded))),
                 cancellationToken);
 
-            if (blobToMigrate == default)
-            {
-                return false;
-            }
-
-            // if any tags present, fetch separately
+            // if any tags present, need to fetch separately
             IDictionary<string, string> tags = default;
-            if (blobToMigrate.Properties.TagCount > 0)
+            if (properties.TagCount > 0)
             {
-                tags = (await blob.GetTagsAsync()).Value.Tags;
+                tags = (await blob.GetTagsAsync(cancellationToken: cancellationToken)).Value.Tags;
             }
 
-            // wipe old encryption metadata
-            blobToMigrate.Properties.Metadata.Remove("encryptiondata");
+            // important! wipe old encryption metadata
+            properties.Metadata.Remove("encryptiondata");
 
             await _uploader.UploadBlobWithEncryptionAsync(
                 blob,
                 plaintextHolder,
-                headers: default,
-                blobToMigrate.Properties.Metadata,
+                headers: new BlobHttpHeaders
+                {
+                    CacheControl = properties.CacheControl,
+                    ContentDisposition = properties.ContentDisposition,
+                    ContentEncoding = properties.ContentEncoding,
+                    ContentHash = properties.ContentHash,
+                    ContentLanguage = properties.ContentLanguage,
+                    ContentType = properties.ContentType,
+                },
+                properties.Metadata,
                 tags,
-                blobToMigrate.KeyId,
-                blobToMigrate.KeyWrapAlgorithm,
+                keyId,
+                keyWrapAlgorithm,
                 args,
                 new Progress<long>(bytesUploaded => progressHandler?.Report((BlobMigrationState.Uploading, bytesUploaded))),
                 cancellationToken);
@@ -73,19 +100,28 @@ namespace Azure.Storage.Blobs.EncryptionMigration
         /// 
         /// For more information on hierarchical listing, see <see cref="BlobContainerClient.GetBlobsByHierarchyAsync"/>.
         /// </summary>
-        /// <param name="container">Container to list from.</param>
-        /// <param name="prefix">Blob prefix to list under.</param>
-        /// <param name="delimiter">Delimiter to separate path segments by.</param>
-        /// <param name="recursive">Whether to recursively enumerate more prefixes that are returned.</param>
-        /// <param name="args">Arguments for upload, specific to the chosen new encryption solution.</param>
-        /// <param name="progressHandler">Progress handler for prefix enumeration progress and blob transfer.</param>
-        /// <param name="cancellationToken">Cancellation token.</param>
-        /// <returns>Total number of blobs migrated and total number ignored (not encrypted, not fount, etc.)</returns>
-        public async Task<(long BlobsMigrated, long BlobsIgnored)> MigrateBlobPrefixAsync(
+        /// <param name="container">
+        /// Container to list from.
+        /// Client should not be preconfigured with any encryption options.
+        /// </param>
+        /// <param name="prefix">
+        /// Optional prefix to list with. Otherwise, list whole container.
+        /// </param>
+        /// <param name="args">
+        /// Arguments for upload, specific to the chosen new encryption solution.
+        /// </param>
+        /// <param name="progressHandler">
+        /// Progress handler for prefix enumeration progress and blob transfer.
+        /// </param>
+        /// <param name="cancellationToken">
+        /// Cancellation token.
+        /// </param>
+        /// <returns>
+        /// Total number of blobs migrated and total number ignored (not clientside v1 encrypted, not found, etc.)
+        /// </returns>
+        public async Task<(long BlobsMigrated, long BlobsIgnored)> MigrateBlobsAsync(
             BlobContainerClient container,
             string prefix,
-            string delimiter,
-            bool recursive,
             TUploadArgs args,
             IProgress<(long BlobsMigrated, long BlobsIgnored, BlobMigrationState CurrentBlobState, long CurrentBlobBytesTransferred)> progressHandler,
             CancellationToken cancellationToken)
@@ -94,69 +130,19 @@ namespace Azure.Storage.Blobs.EncryptionMigration
             long blobsIgnored = 0;
 
             // async enumeration requires C# 8 or greater
-            await foreach (var item in container.GetBlobsByHierarchyAsync(prefix: prefix, delimiter: delimiter))
+            await foreach (var blobItem in container.GetBlobsAsync(
+                prefix: prefix,
+                traits: BlobTraits.Metadata, // fetch blob metadata on list
+                cancellationToken: cancellationToken))
             {
-                if (item.IsBlob)
-                {
-                    if (await MigrateBlobIfClientsideV1Encrypted(
-                        container.GetBlobClient(item.Blob.Name),
+                // Check metadata from listing to see if blob should be migrated.
+                // Blob may have been altered or moved since the list operation. Migrate function will recheck blob properties.
+                if (_downloader.IsClientSideEncryptedV1(blobItem.Metadata) &&
+                    await TryMigrateClientSideEncryptedV1Blob(
+                        container.GetBlobClient(blobItem.Name),
                         args,
                         new Progress<(BlobMigrationState State, long BytesTransfered)>(result => progressHandler?.Report((blobsMigrated, blobsIgnored, result.State, result.BytesTransfered))),
-                        cancellationToken))
-                    {
-                        blobsMigrated++;
-                    }
-                    else
-                    {
-                        blobsIgnored++;
-                    }
-                }
-                else if (recursive)
-                {
-                    (long subPrefixMigrated, long subPrefixIgnored) = await MigrateBlobPrefixAsync(
-                        container,
-                        prefix + item.Prefix,
-                        delimiter,
-                        recursive,
-                        args,
-                        new Progress<(long BlobsMigrated, long BlobsIgnored, BlobMigrationState CurrentBlobState, long CurrentBlobBytesTransferred)>(
-                            report => progressHandler?.Report((blobsMigrated + report.BlobsMigrated, blobsIgnored + report.BlobsIgnored, report.CurrentBlobState, report.CurrentBlobBytesTransferred))),
-                        cancellationToken);
-
-                    blobsMigrated += subPrefixMigrated;
-                    blobsIgnored += subPrefixIgnored;
-                }
-            }
-
-            return (blobsMigrated, blobsIgnored);
-        }
-
-        /// <summary>
-        /// Migrates all applicable blobs in a given container.
-        /// </summary>
-        /// <param name="container">Container to migrate.</param>
-        /// <param name="args">Arguments for upload, specific to the chosen new encryption solution.</param>
-        /// <param name="progressHandler">Progress handler for container enumeration progress and blob transfer.</param>
-        /// <param name="cancellationToken">Cancellation token.</param>
-        /// <returns>Total number of blobs migrated.</returns>
-        /// <returns></returns>
-        public async Task<long> MigrateBlobContainerAsync(
-            BlobContainerClient container,
-            TUploadArgs args,
-            IProgress<(long BlobsMigrated, long BlobsIgnored, BlobMigrationState CurrentBlobState, long CurrentBlobBytesTransferred)> progressHandler,
-            CancellationToken cancellationToken)
-        {
-            long blobsMigrated = 0;
-            long blobsIgnored = 0;
-
-            // async enumeration requires C# 8 or greater
-            await foreach (var item in container.GetBlobsAsync())
-            {
-                if (await MigrateBlobIfClientsideV1Encrypted(
-                    container.GetBlobClient(item.Name),
-                    args,
-                    new Progress<(BlobMigrationState State, long BytesTransfered)>(result => progressHandler?.Report((blobsMigrated, blobsIgnored, result.State, result.BytesTransfered))),
-                    cancellationToken))
+                        cancellationToken)) 
                 {
                     blobsMigrated++;
                 }
@@ -164,10 +150,9 @@ namespace Azure.Storage.Blobs.EncryptionMigration
                 {
                     blobsIgnored++;
                 }
-                progressHandler?.Report((blobsMigrated, blobsIgnored, default, default));
             }
 
-            return blobsMigrated;
+            return (blobsMigrated, blobsIgnored);
         }
     }
 }
