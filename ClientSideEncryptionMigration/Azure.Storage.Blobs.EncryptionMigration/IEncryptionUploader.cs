@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 
 namespace Azure.Storage.Blobs.EncryptionMigration
 {
-    public interface IEncryptionUploader<TUploadArgs>
+    public interface IEncryptionUploader
     {
         Task UploadBlobWithEncryptionAsync(
             BlobClient blob,
@@ -17,7 +17,6 @@ namespace Azure.Storage.Blobs.EncryptionMigration
             IDictionary<string, string> tags,
             string previousKeyId,
             string previousKeyWrapAlgorithm,
-            TUploadArgs args,
             IProgress<long> progressHandler,
             CancellationToken cancellationToken);
     }

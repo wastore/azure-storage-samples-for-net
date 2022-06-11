@@ -2,18 +2,19 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 
 namespace Azure.Storage.Blobs.EncryptionMigration
 {
-    internal class ManagedKeyUploader : IEncryptionUploader<string>
+    internal class ManagedKeyUploader : IEncryptionUploader
     {
+        private readonly string _encryptionScope;
         private readonly StorageTransferOptions _transferOptions;
 
-        public ManagedKeyUploader(StorageTransferOptions? transferOptions = default)
+        public ManagedKeyUploader(string encryptionScope, StorageTransferOptions? transferOptions = default)
         {
+            _encryptionScope = encryptionScope;
             _transferOptions = transferOptions ?? new StorageTransferOptions
             {
                 InitialTransferSize = 4 * Constants.MB,
@@ -30,11 +31,10 @@ namespace Azure.Storage.Blobs.EncryptionMigration
             IDictionary<string, string> tags,
             string previousKeyId,
             string previousKeyWrapAlgorithm,
-            string encryptionScope,
             IProgress<long> progressHandler,
             CancellationToken cancellationToken)
         {
-            await blob.WithEncryptionScope(encryptionScope).UploadAsync(
+            await blob.WithEncryptionScope(_encryptionScope).UploadAsync(
                 plaintext,
                 new BlobUploadOptions
                 {

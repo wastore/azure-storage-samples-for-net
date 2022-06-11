@@ -8,12 +8,12 @@ using System.Threading.Tasks;
 
 namespace Azure.Storage.Blobs.EncryptionMigration
 {
-    public class DataMigrator<TUploadArgs>
+    public class DataMigrator
     {
         private readonly ClientSideEncryptionDownloader _downloader;
-        private readonly IEncryptionUploader<TUploadArgs> _uploader;
+        private readonly IEncryptionUploader _uploader;
 
-        public DataMigrator(ClientSideEncryptionDownloader downloader, IEncryptionUploader<TUploadArgs> uploader)
+        public DataMigrator(ClientSideEncryptionDownloader downloader, IEncryptionUploader uploader)
         {
             _downloader = downloader;
             _uploader = uploader;
@@ -40,7 +40,6 @@ namespace Azure.Storage.Blobs.EncryptionMigration
         /// </returns>
         public async Task<bool> TryMigrateClientSideEncryptedV1Blob(
             BlobClient blob,
-            TUploadArgs args,
             IProgress<(BlobMigrationState State, long BytesTransfered)> progressHandler,
             CancellationToken cancellationToken)
         {
@@ -86,7 +85,6 @@ namespace Azure.Storage.Blobs.EncryptionMigration
                 tags,
                 keyId,
                 keyWrapAlgorithm,
-                args,
                 new Progress<long>(bytesUploaded => progressHandler?.Report((BlobMigrationState.Uploading, bytesUploaded))),
                 cancellationToken);
 
@@ -122,7 +120,6 @@ namespace Azure.Storage.Blobs.EncryptionMigration
         public async Task<(long BlobsMigrated, long BlobsIgnored)> MigrateBlobsAsync(
             BlobContainerClient container,
             string prefix,
-            TUploadArgs args,
             IProgress<(long BlobsMigrated, long BlobsIgnored, BlobMigrationState CurrentBlobState, long CurrentBlobBytesTransferred)> progressHandler,
             CancellationToken cancellationToken)
         {
@@ -140,7 +137,6 @@ namespace Azure.Storage.Blobs.EncryptionMigration
                 if (_downloader.IsClientSideEncryptedV1(blobItem.Metadata) &&
                     await TryMigrateClientSideEncryptedV1Blob(
                         container.GetBlobClient(blobItem.Name),
-                        args,
                         new Progress<(BlobMigrationState State, long BytesTransfered)>(result => progressHandler?.Report((blobsMigrated, blobsIgnored, result.State, result.BytesTransfered))),
                         cancellationToken)) 
                 {
