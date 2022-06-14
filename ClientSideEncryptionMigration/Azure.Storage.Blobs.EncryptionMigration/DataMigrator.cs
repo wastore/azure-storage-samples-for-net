@@ -59,6 +59,8 @@ namespace Azure.Storage.Blobs.EncryptionMigration
                 new Progress<long>(bytesDownloaded => progressHandler?.Report((BlobMigrationState.Downloading, bytesDownloaded))),
                 cancellationToken);
 
+            plaintextHolder.Position = 0;
+
             // if any tags present, need to fetch separately
             IDictionary<string, string> tags = default;
             if (properties.TagCount > 0)
@@ -77,7 +79,9 @@ namespace Azure.Storage.Blobs.EncryptionMigration
                     CacheControl = properties.CacheControl,
                     ContentDisposition = properties.ContentDisposition,
                     ContentEncoding = properties.ContentEncoding,
-                    ContentHash = properties.ContentHash,
+                    // Do NOT copy content hash, it will not be the same
+                    // This was likely service calculated anyway, if you are migrating from v1 encryption
+                    //ContentHash = properties.ContentHash,
                     ContentLanguage = properties.ContentLanguage,
                     ContentType = properties.ContentType,
                 },

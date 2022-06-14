@@ -20,12 +20,12 @@ namespace Azure.Storage.Blobs.EncryptionMigration
         /// </summary>
         /// <param name="transferOptions">Storage transfer options for downloads.</param>
         /// <param name="keyEncryptionKeyResolver">Resolver for encryption keys on download.</param>
-        public ClientSideEncryptionDownloader(StorageTransferOptions transferOptions, IKeyEncryptionKeyResolver keyEncryptionKeyResolver)
+        public ClientSideEncryptionDownloader(IKeyEncryptionKeyResolver keyResolver, StorageTransferOptions transferOptions = default)
         {
             _transferOptions = transferOptions;
             _encryptionOptions = new ClientSideEncryptionOptions(ClientSideEncryptionVersion.V1_0)
             {
-                KeyResolver = keyEncryptionKeyResolver
+                KeyResolver = keyResolver
             };
         }
 
