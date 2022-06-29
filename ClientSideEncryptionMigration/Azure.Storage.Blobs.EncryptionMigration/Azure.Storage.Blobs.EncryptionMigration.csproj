@@ -6,7 +6,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\..\azure-sdk-for-net\sdk\storage\Azure.Storage.Blobs\src\Azure.Storage.Blobs.csproj" />
+    <PackageReference Include="Azure.Storage.Blobs" Version="12.13.0-beta.1"/>
   </ItemGroup>
 
 </Project>
